@@ -2,7 +2,6 @@ package com.shadowai.app.download
 
 import android.content.Context
 import android.util.Log
-import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -57,6 +56,29 @@ class ModelDownloadManager @Inject constructor(
 
         // Tag for identifying model download work
         private const val WORK_TAG = "model_download"
+
+        private fun bytesToReadable(bytes: Long): String {
+            return when {
+                bytes >= 1_000_000_000 -> String.format("%.2f GB", bytes / 1_000_000_000.0)
+                bytes >= 1_000_000 -> String.format("%.2f MB", bytes / 1_000_000.0)
+                bytes >= 1_000 -> String.format("%.2f KB", bytes / 1_000.0)
+                else -> "$bytes B"
+            }
+        }
+
+        private fun bytesPerSecondToReadable(bytesPerSecond: Float): String {
+            return when {
+                bytesPerSecond >= 1_000_000 -> String.format(
+                    "%.2f MB/s",
+                    bytesPerSecond / 1_000_000.0
+                )
+                bytesPerSecond >= 1_000 -> String.format(
+                    "%.2f KB/s",
+                    bytesPerSecond / 1_000.0
+                )
+                else -> String.format("%.2f B/s", bytesPerSecond)
+            }
+        }
     }
 
     /**
@@ -179,25 +201,35 @@ class ModelDownloadManager @Inject constructor(
     fun getDownloadProgress(workId: UUID): Flow<DownloadProgress> {
         return workManager.getWorkInfoByIdFlow(workId)
             .map { workInfo ->
-                workInfo.progress.let { data ->
-                    DownloadProgress(
-                        progressPercent = data.getFloat(ModelDownloadWorker.PROGRESS_PERCENT, 0f),
-                        bytesDownloaded = data.getLong(ModelDownloadWorker.BYTES_DOWNLOADED, 0L),
-                        totalBytes = data.getLong(ModelDownloadWorker.TOTAL_BYTES, 0L),
-                        speedBytesPerSecond = data.getFloat(
-                            ModelDownloadWorker.SPEED_BYTES_PER_SECOND,
-                            0f
-                        ),
-                        fileName = data.getString(ModelDownloadWorker.FILE_NAME) ?: "",
-                        isRunning = workInfo.state == WorkInfo.State.RUNNING,
-                        isSucceeded = workInfo.state == WorkInfo.State.SUCCEEDED,
-                        isFailed = workInfo.state == WorkInfo.State.FAILED,
-                        isCancelled = workInfo.state == WorkInfo.State.CANCELLED,
-                        isEnqueued = workInfo.state == WorkInfo.State.ENQUEUED,
-                        isBlocked = workInfo.state == WorkInfo.State.BLOCKED,
-                        runAttemptCount = workInfo.runAttemptCount
+                if (workInfo == null) {
+                    return@map DownloadProgress(
+                        progressPercent = 0f,
+                        bytesDownloaded = 0L,
+                        totalBytes = 0L,
+                        speedBytesPerSecond = 0f,
+                        fileName = "",
+                        runAttemptCount = 0
                     )
                 }
+
+                val data = workInfo.progress
+                DownloadProgress(
+                    progressPercent = data.getFloat(ModelDownloadWorker.PROGRESS_PERCENT, 0f),
+                    bytesDownloaded = data.getLong(ModelDownloadWorker.BYTES_DOWNLOADED, 0L),
+                    totalBytes = data.getLong(ModelDownloadWorker.TOTAL_BYTES, 0L),
+                    speedBytesPerSecond = data.getFloat(
+                        ModelDownloadWorker.SPEED_BYTES_PER_SECOND,
+                        0f
+                    ),
+                    fileName = data.getString(ModelDownloadWorker.FILE_NAME) ?: "",
+                    isRunning = workInfo.state == WorkInfo.State.RUNNING,
+                    isSucceeded = workInfo.state == WorkInfo.State.SUCCEEDED,
+                    isFailed = workInfo.state == WorkInfo.State.FAILED,
+                    isCancelled = workInfo.state == WorkInfo.State.CANCELLED,
+                    isEnqueued = workInfo.state == WorkInfo.State.ENQUEUED,
+                    isBlocked = workInfo.state == WorkInfo.State.BLOCKED,
+                    runAttemptCount = workInfo.runAttemptCount
+                )
             }
     }
 
@@ -210,27 +242,25 @@ class ModelDownloadManager @Inject constructor(
     fun getDownloadProgress(uniqueWorkName: String): Flow<DownloadProgress?> {
         return workManager.getWorkInfosByTagFlow(uniqueWorkName)
             .map { workInfoList ->
-                workInfoList.firstOrNull()?.let { workInfo ->
-                    workInfo.progress.let { data ->
-                        DownloadProgress(
-                            progressPercent = data.getFloat(ModelDownloadWorker.PROGRESS_PERCENT, 0f),
-                            bytesDownloaded = data.getLong(ModelDownloadWorker.BYTES_DOWNLOADED, 0L),
-                            totalBytes = data.getLong(ModelDownloadWorker.TOTAL_BYTES, 0L),
-                            speedBytesPerSecond = data.getFloat(
-                                ModelDownloadWorker.SPEED_BYTES_PER_SECOND,
-                                0f
-                            ),
-                            fileName = data.getString(ModelDownloadWorker.FILE_NAME) ?: "",
-                            isRunning = workInfo.state == WorkInfo.State.RUNNING,
-                            isSucceeded = workInfo.state == WorkInfo.State.SUCCEEDED,
-                            isFailed = workInfo.state == WorkInfo.State.FAILED,
-                            isCancelled = workInfo.state == WorkInfo.State.CANCELLED,
-                            isEnqueued = workInfo.state == WorkInfo.State.ENQUEUED,
-                            isBlocked = workInfo.state == WorkInfo.State.BLOCKED,
-                            runAttemptCount = workInfo.runAttemptCount
-                        )
-                    }
-                }
+                val workInfo = workInfoList.firstOrNull() ?: return@map null
+                val data = workInfo.progress
+                DownloadProgress(
+                    progressPercent = data.getFloat(ModelDownloadWorker.PROGRESS_PERCENT, 0f),
+                    bytesDownloaded = data.getLong(ModelDownloadWorker.BYTES_DOWNLOADED, 0L),
+                    totalBytes = data.getLong(ModelDownloadWorker.TOTAL_BYTES, 0L),
+                    speedBytesPerSecond = data.getFloat(
+                        ModelDownloadWorker.SPEED_BYTES_PER_SECOND,
+                        0f
+                    ),
+                    fileName = data.getString(ModelDownloadWorker.FILE_NAME) ?: "",
+                    isRunning = workInfo.state == WorkInfo.State.RUNNING,
+                    isSucceeded = workInfo.state == WorkInfo.State.SUCCEEDED,
+                    isFailed = workInfo.state == WorkInfo.State.FAILED,
+                    isCancelled = workInfo.state == WorkInfo.State.CANCELLED,
+                    isEnqueued = workInfo.state == WorkInfo.State.ENQUEUED,
+                    isBlocked = workInfo.state == WorkInfo.State.BLOCKED,
+                    runAttemptCount = workInfo.runAttemptCount
+                )
             }
     }
 
@@ -333,30 +363,5 @@ class ModelDownloadManager @Inject constructor(
         CANCELLED,
         BLOCKED,
         UNKNOWN
-    }
-
-    private companion object {
-        fun bytesToReadable(bytes: Long): String {
-            return when {
-                bytes >= 1_000_000_000 -> String.format("%.2f GB", bytes / 1_000_000_000.0)
-                bytes >= 1_000_000 -> String.format("%.2f MB", bytes / 1_000_000.0)
-                bytes >= 1_000 -> String.format("%.2f KB", bytes / 1_000.0)
-                else -> "$bytes B"
-            }
-        }
-
-        fun bytesPerSecondToReadable(bytesPerSecond: Float): String {
-            return when {
-                bytesPerSecond >= 1_000_000 -> String.format(
-                    "%.2f MB/s",
-                    bytesPerSecond / 1_000_000.0
-                )
-                bytesPerSecond >= 1_000 -> String.format(
-                    "%.2f KB/s",
-                    bytesPerSecond / 1_000.0
-                )
-                else -> String.format("%.2f B/s", bytesPerSecond)
-            }
-        }
     }
 }

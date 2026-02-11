@@ -41,19 +41,28 @@ class CertificatePinningInterceptor(
             // Re-throw to let the caller handle it
             throw pinningException
 
-        } catch (e: IOException) when (e is java.security.cert.CertificateException || e.cause is java.security.cert.CertificateException) {
-            // Handle certificate-related exceptions
-            val hostname = chain.request().url.host
+        } catch (e: IOException) {
+            // DNS failures are connectivity issues, not pinning failures.
+            if (e is UnknownHostException) {
+                throw e
+            }
 
-            val pinningException = CertificatePinningException(
-                hostname = hostname,
-                message = "Certificate validation failed for $hostname: ${e.message}",
-                cause = e
-            )
+            val isCertificateError =
+                e is java.security.cert.CertificateException ||
+                    e.cause is java.security.cert.CertificateException
 
-            onError(pinningException)
+            if (isCertificateError) {
+                val hostname = chain.request().url.host
+                val pinningException = CertificatePinningException(
+                    hostname = hostname,
+                    message = "Certificate validation failed for $hostname: ${e.message}",
+                    cause = e
+                )
+                onError(pinningException)
+                throw pinningException
+            }
 
-            throw pinningException
+            throw e
         }
     }
 }

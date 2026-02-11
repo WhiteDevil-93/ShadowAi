@@ -155,18 +155,19 @@ class DownloadViewModel @Inject constructor(
      */
     fun getDownloadProgress(uniqueWorkName: String) {
         viewModelScope.launch {
-            downloadManager.getDownloadProgress(uniqueWorkName)?.collect { progress ->
+            downloadManager.getDownloadProgress(uniqueWorkName).collect { progress ->
+                val resolvedProgress = progress ?: return@collect
                 _downloadState.value = DownloadState(
-                    isDownloading = !progress.isSucceeded && !progress.isFailed && !progress.isCancelled,
-                    progress = progress.progressPercentInt,
-                    fileName = progress.fileName,
-                    bytesDownloaded = progress.bytesDownloaded,
-                    totalBytes = progress.totalBytes,
-                    speed = progress.speedReadable,
-                    downloadedReadable = progress.downloadedReadable,
-                    totalReadable = progress.totalReadable,
-                    status = progress.status,
-                    runAttemptCount = progress.runAttemptCount
+                    isDownloading = !resolvedProgress.isSucceeded && !resolvedProgress.isFailed && !resolvedProgress.isCancelled,
+                    progress = resolvedProgress.progressPercentInt,
+                    fileName = resolvedProgress.fileName,
+                    bytesDownloaded = resolvedProgress.bytesDownloaded,
+                    totalBytes = resolvedProgress.totalBytes,
+                    speed = resolvedProgress.speedReadable,
+                    downloadedReadable = resolvedProgress.downloadedReadable,
+                    totalReadable = resolvedProgress.totalReadable,
+                    status = resolvedProgress.status,
+                    runAttemptCount = resolvedProgress.runAttemptCount
                 )
             }
         }
