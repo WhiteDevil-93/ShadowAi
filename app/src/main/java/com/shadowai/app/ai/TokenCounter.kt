@@ -1,5 +1,6 @@
 package com.shadowai.app.ai
 
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,7 +21,8 @@ class TokenCounter @Inject constructor() {
         /**
          * Cache token counts for performance.
          */
-        private val tokenCountCache = mutableMapOf<String, Int>()
+        private val tokenCountCache = ConcurrentHashMap<String, Int>()
+        private const val MAX_CACHE_ENTRIES = 2048
     }
 
     /**
@@ -29,9 +31,15 @@ class TokenCounter @Inject constructor() {
     fun countTokens(text: String): Int {
         if (text.isBlank()) return 0
 
-        return tokenCountCache.getOrPut(text) {
-            (text.length / CHARS_PER_TOKEN).coerceAtLeast(1)
+        tokenCountCache[text]?.let { return it }
+        val estimate = (text.length / CHARS_PER_TOKEN).coerceAtLeast(1)
+
+        // Keep cache bounded to avoid unbounded growth when prompts vary heavily.
+        if (tokenCountCache.size >= MAX_CACHE_ENTRIES) {
+            tokenCountCache.clear()
         }
+        tokenCountCache[text] = estimate
+        return estimate
     }
 
     /**
