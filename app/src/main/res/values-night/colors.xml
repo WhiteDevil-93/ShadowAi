@@ -1,0 +1,13 @@
+<resources>
+    <color name="colorPrimary">#2F88FF</color>
+    <color name="colorPrimaryDark">#1E5FB5</color>
+    <color name="colorSecondary">#7BC7FF</color>
+    <color name="bgPrimary">#0E1116</color>
+    <color name="bgSecondary">#141821</color>
+    <color name="bgCard">#161B24</color>
+    <color name="inputBackground">#1E2531</color>
+    <color name="textPrimary">#F5F7FB</color>
+    <color name="textSecondary">#A7B2C3</color>
+    <color name="codeBlockBg">#111827</color>
+    <color name="divider">#1F2633</color>
+</resources>

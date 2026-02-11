@@ -1,0 +1,4 @@
+<resources>
+    <!-- Fallback attr to satisfy Material Chip style on older/bridged themes -->
+    <attr name="chipTextAppearance" format="reference" />
+</resources>

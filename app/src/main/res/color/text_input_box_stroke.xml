@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Design 3 TextInputLayout Box Stroke Color Selector -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Error state - highest priority (uses android:color only) -->
+    <item android:color="@color/error" />
+    
+    <!-- Focused state -->
+    <item android:color="@color/primary" android:state_focused="true" />
+    
+    <!-- Hover state -->
+    <item android:color="@color/primary" android:state_hovered="true" />
+    
+    <!-- Disabled state -->
+    <item android:color="@color/outlineVariant" android:state_enabled="false" />
+    
+    <!-- Default unfocused state -->
+    <item android:color="@color/outline" />
+    
+</selector>

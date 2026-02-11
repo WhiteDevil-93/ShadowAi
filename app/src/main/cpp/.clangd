@@ -1,0 +1,14 @@
+CompileFlags:
+  Add: [
+    --target=aarch64-linux-android35,
+    -I"C:/Users/anon3/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1",
+    -I"C:/Users/anon3/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/aarch64-linux-android",
+    -I"C:/Users/anon3/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include",
+    -DANDROID,
+    -D__ANDROID_API__=35
+  ]
+  Remove: [
+    -target,
+    x86_64-pc-windows-msvc,
+    -Wunused-includes
+  ]

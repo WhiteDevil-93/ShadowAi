@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "C:/Users/anon3/Downloads/DarcyAi-Android-16/app/src/main/cpp",
+    "command": "clang++ -c -x c++ -std=c++17 -target aarch64-linux-android35 -I\"C:/Users/anon3/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/c++/v1\" -I\"C:/Users/anon3/Downloads/DarcyAi-Android-16/app/src/main/cpp/llama/include\" -I\"C:/Users/anon3/Downloads/DarcyAi-Android-16/app/src/main/cpp/llama/ggml/include\" -I\"C:/Users/anon3/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include\" -I\"C:/Users/anon3/AppData/Local/Android/Sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/aarch64-linux-android\" -fPIC -DANDROID -D__ANDROID_API__=35 -fsyntax-only \"llama_jni.cpp\"",
+    "file": "llama_jni.cpp"
+  }
+]

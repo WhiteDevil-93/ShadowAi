@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SHADOWAI UI Spec v1.0 - Floating Mode Tabs Container Background -->
+<!-- Rounded rectangle with glass-like effect (dark gray with slight transparency) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#CC0E1116" />
+    <corners android:radius="28dp" />
+</shape>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_control_panel"
+        android:icon="@drawable/ic_tune"
+        android:title="@string/menu_control_center"
+        app:contentDescription="@string/content_desc_open_control_center"
+        app:showAsAction="always" />
+</menu>

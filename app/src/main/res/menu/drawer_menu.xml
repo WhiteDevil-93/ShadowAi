@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_section_shortcuts"
+        android:title="@string/menu_shortcuts"
+        android:enabled="false" />
+
+    <group android:checkableBehavior="none">
+        <item
+            android:id="@+id/nav_telephony"
+            android:title="@string/menu_call" />
+        <item
+            android:id="@+id/nav_messaging"
+            android:title="@string/menu_sms" />
+        <item
+            android:id="@+id/nav_media"
+            android:title="@string/menu_media" />
+        <item
+            android:id="@+id/nav_system"
+            android:title="@string/menu_status" />
+    </group>
+
+    <item
+        android:id="@+id/nav_section_library"
+        android:title="@string/menu_library"
+        android:enabled="false" />
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_chat"
+            android:title="@string/nav_chat" />
+        <item
+            android:id="@+id/nav_history"
+            android:title="@string/nav_history" />
+        <item
+            android:id="@+id/nav_saved"
+            android:title="@string/nav_saved" />
+    </group>
+
+    <item
+        android:id="@+id/nav_control_center"
+        android:title="@string/menu_control_center"
+        android:icon="@drawable/ic_tune" />
+</menu>

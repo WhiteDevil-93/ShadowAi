@@ -1,0 +1,466 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration on demand is an incubating feature.
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin FROM-CACHE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources
+> Task :buildSrc:classes
+> Task :buildSrc:jar
+> Task :build-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :build-plugin:compileKotlin UP-TO-DATE
+> Task :build-plugin:compileJava NO-SOURCE
+> Task :build-plugin:pluginDescriptors UP-TO-DATE
+> Task :build-plugin:processResources
+> Task :build-plugin:classes
+> Task :build-plugin:jar
+> Task :backend:clean UP-TO-DATE
+> Task :ui-composition:clean UP-TO-DATE
+> Task :clean
+> Task :artifact-system:clean
+> Task :artifact-system:preBuild UP-TO-DATE
+> Task :artifact-system:preDebugBuild UP-TO-DATE
+> Task :artifact-system:checkKotlinGradlePluginConfigurationErrors SKIPPED
+
+> Task :inference_process:externalNativeBuildCleanDebug
+Clean llama-arm64-v8a, llama_jni-arm64-v8a
+
+> Task :inference_process:externalNativeBuildCleanRelease
+
+> Task :app:externalNativeBuildCleanDebug
+Clean llama-arm64-v8a, llama_jni-arm64-v8a
+
+> Task :app:externalNativeBuildCleanRelease
+> Task :pipeline-planner:clean
+> Task :pipeline-planner:preBuild UP-TO-DATE
+> Task :pipeline-planner:preDebugBuild UP-TO-DATE
+> Task :artifact-system:processDebugNavigationResources FROM-CACHE
+> Task :artifact-system:generateDebugResValues FROM-CACHE
+> Task :artifact-system:writeDebugAarMetadata
+> Task :pipeline-planner:writeDebugAarMetadata
+> Task :ui-validator:clean
+> Task :ui-validator:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :artifact-system:generateDebugResources FROM-CACHE
+> Task :pipeline-planner:processDebugNavigationResources FROM-CACHE
+> Task :pipeline-planner:generateDebugResValues FROM-CACHE
+> Task :pipeline-planner:generateDebugResources FROM-CACHE
+> Task :ui-params:clean
+> Task :ui-params:preBuild UP-TO-DATE
+> Task :ui-params:preDebugBuild UP-TO-DATE
+> Task :artifact-system:packageDebugResources FROM-CACHE
+> Task :artifact-system:extractDeepLinksDebug FROM-CACHE
+> Task :ui-params:writeDebugAarMetadata
+> Task :ui-params:processDebugNavigationResources FROM-CACHE
+> Task :ui-params:generateDebugResValues FROM-CACHE
+> Task :pipeline-planner:packageDebugResources FROM-CACHE
+> Task :model-catalog:clean
+> Task :model-catalog:preBuild UP-TO-DATE
+> Task :model-catalog:preDebugBuild UP-TO-DATE
+> Task :pipeline-planner:extractDeepLinksDebug FROM-CACHE
+> Task :ui-params:generateDebugResources FROM-CACHE
+> Task :model-catalog:writeDebugAarMetadata
+> Task :artifact-system:processDebugManifest FROM-CACHE
+> Task :model-catalog:processDebugNavigationResources FROM-CACHE
+> Task :diagnostics:clean
+> Task :diagnostics:preBuild UP-TO-DATE
+> Task :diagnostics:preDebugBuild UP-TO-DATE
+> Task :pipeline-planner:processDebugManifest FROM-CACHE
+> Task :model-catalog:generateDebugResValues FROM-CACHE
+> Task :artifact-system:compileDebugLibraryResources FROM-CACHE
+> Task :diagnostics:writeDebugAarMetadata
+> Task :pipeline-planner:compileDebugLibraryResources FROM-CACHE
+> Task :model-catalog:generateDebugResources FROM-CACHE
+> Task :diagnostics:processDebugNavigationResources FROM-CACHE
+> Task :diagnostics:generateDebugResValues FROM-CACHE
+> Task :artifact-system:parseDebugLocalResources FROM-CACHE
+> Task :pipeline-planner:parseDebugLocalResources FROM-CACHE
+> Task :diagnostics:generateDebugResources FROM-CACHE
+> Task :ui-params:packageDebugResources FROM-CACHE
+> Task :pipeline-planner:generateDebugRFile FROM-CACHE
+> Task :model-catalog:packageDebugResources FROM-CACHE
+> Task :pipeline-planner:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :artifact-system:generateDebugRFile FROM-CACHE
+> Task :ui-params:extractDeepLinksDebug FROM-CACHE
+> Task :model-catalog:extractDeepLinksDebug FROM-CACHE
+> Task :diagnostics:packageDebugResources FROM-CACHE
+> Task :pipeline-planner:javaPreCompileDebug FROM-CACHE
+> Task :model-catalog:processDebugManifest FROM-CACHE
+> Task :artifact-system:javaPreCompileDebug FROM-CACHE
+> Task :diagnostics:extractDeepLinksDebug FROM-CACHE
+> Task :ui-params:processDebugManifest FROM-CACHE
+> Task :model-catalog:compileDebugLibraryResources FROM-CACHE
+> Task :ui-params:compileDebugLibraryResources FROM-CACHE
+> Task :model-catalog:parseDebugLocalResources FROM-CACHE
+> Task :ui-params:parseDebugLocalResources FROM-CACHE
+> Task :artifact-system:mergeDebugShaders
+> Task :pipeline-planner:mergeDebugShaders
+> Task :diagnostics:processDebugManifest FROM-CACHE
+> Task :artifact-system:compileDebugShaders NO-SOURCE
+> Task :pipeline-planner:compileDebugShaders NO-SOURCE
+> Task :artifact-system:generateDebugAssets UP-TO-DATE
+> Task :pipeline-planner:generateDebugAssets UP-TO-DATE
+> Task :model-catalog:generateDebugRFile FROM-CACHE
+> Task :model-catalog:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :diagnostics:compileDebugLibraryResources FROM-CACHE
+> Task :ui-params:generateDebugRFile FROM-CACHE
+> Task :ui-params:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :artifact-system:mergeDebugAssets
+> Task :pipeline-planner:mergeDebugAssets
+> Task :model-catalog:javaPreCompileDebug FROM-CACHE
+> Task :diagnostics:parseDebugLocalResources FROM-CACHE
+> Task :ui-params:javaPreCompileDebug FROM-CACHE
+> Task :artifact-system:mergeDebugJniLibFolders
+> Task :artifact-system:mergeDebugNativeLibs NO-SOURCE
+> Task :ui-params:mergeDebugShaders
+> Task :ui-params:compileDebugShaders NO-SOURCE
+> Task :ui-params:generateDebugAssets UP-TO-DATE
+> Task :pipeline-planner:mergeDebugJniLibFolders
+> Task :model-catalog:mergeDebugShaders
+> Task :diagnostics:generateDebugRFile FROM-CACHE
+> Task :diagnostics:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :pipeline-planner:mergeDebugNativeLibs NO-SOURCE
+> Task :model-catalog:compileDebugShaders NO-SOURCE
+> Task :artifact-system:copyDebugJniLibsProjectOnly
+> Task :model-catalog:generateDebugAssets UP-TO-DATE
+> Task :ui-params:mergeDebugAssets
+> Task :pipeline-planner:copyDebugJniLibsProjectOnly
+> Task :model-catalog:mergeDebugAssets
+> Task :ui-params:mergeDebugJniLibFolders
+> Task :ui-params:mergeDebugNativeLibs NO-SOURCE
+> Task :model-catalog:mergeDebugJniLibFolders
+> Task :hot-swapping:clean
+> Task :hot-swapping:preBuild UP-TO-DATE
+> Task :hot-swapping:preDebugBuild UP-TO-DATE
+> Task :model-catalog:mergeDebugNativeLibs NO-SOURCE
+> Task :ui-params:copyDebugJniLibsProjectOnly
+> Task :diagnostics:javaPreCompileDebug FROM-CACHE
+> Task :model-catalog:copyDebugJniLibsProjectOnly
+> Task :hot-swapping:processDebugNavigationResources FROM-CACHE
+> Task :diagnostics:mergeDebugShaders
+> Task :diagnostics:compileDebugShaders NO-SOURCE
+> Task :diagnostics:generateDebugAssets UP-TO-DATE
+> Task :hot-swapping:generateDebugResValues FROM-CACHE
+> Task :hot-swapping:generateDebugResources FROM-CACHE
+> Task :diagnostics:mergeDebugAssets
+> Task :diagnostics:mergeDebugJniLibFolders
+> Task :diagnostics:mergeDebugNativeLibs NO-SOURCE
+> Task :diagnostics:copyDebugJniLibsProjectOnly
+> Task :hot-swapping:packageDebugResources FROM-CACHE
+> Task :hot-swapping:extractDeepLinksDebug FROM-CACHE
+> Task :hot-swapping:writeDebugAarMetadata
+> Task :inference_process:clean
+> Task :inference_process:preBuild UP-TO-DATE
+> Task :inference_process:preDebugBuild UP-TO-DATE
+> Task :inference_process:writeDebugAarMetadata
+> Task :inference_process:processDebugNavigationResources FROM-CACHE
+> Task :hot-swapping:processDebugManifest FROM-CACHE
+> Task :inference_process:generateDebugResValues FROM-CACHE
+> Task :hot-swapping:compileDebugLibraryResources FROM-CACHE
+> Task :inference_process:generateDebugResources FROM-CACHE
+> Task :hot-swapping:parseDebugLocalResources FROM-CACHE
+> Task :hot-swapping:generateDebugRFile FROM-CACHE
+> Task :hot-swapping:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :inference_process:packageDebugResources FROM-CACHE
+> Task :inference_process:extractDeepLinksDebug FROM-CACHE
+> Task :hot-swapping:javaPreCompileDebug FROM-CACHE
+> Task :ui-validator:kaptGenerateStubsKotlin FROM-CACHE
+> Task :inference_process:processDebugManifest FROM-CACHE
+> Task :hot-swapping:mergeDebugShaders
+> Task :hot-swapping:compileDebugShaders NO-SOURCE
+> Task :hot-swapping:generateDebugAssets UP-TO-DATE
+> Task :core-contracts:clean
+> Task :core-contracts:preBuild UP-TO-DATE
+> Task :core-contracts:preDebugBuild UP-TO-DATE
+> Task :inference_process:compileDebugLibraryResources FROM-CACHE
+> Task :core-contracts:writeDebugAarMetadata
+> Task :hot-swapping:mergeDebugAssets
+> Task :core-contracts:processDebugNavigationResources FROM-CACHE
+> Task :inference_process:parseDebugLocalResources FROM-CACHE
+> Task :core-contracts:generateDebugResValues FROM-CACHE
+> Task :hot-swapping:mergeDebugJniLibFolders
+> Task :core-contracts:generateDebugResources FROM-CACHE
+> Task :hot-swapping:mergeDebugNativeLibs NO-SOURCE
+> Task :hot-swapping:copyDebugJniLibsProjectOnly
+> Task :inference_process:generateDebugRFile FROM-CACHE
+> Task :core-contracts:packageDebugResources FROM-CACHE
+> Task :ui-validator:kaptKotlin FROM-CACHE
+> Task :core-contracts:extractDeepLinksDebug FROM-CACHE
+> Task :core-contracts:processDebugManifest FROM-CACHE
+> Task :core-contracts:compileDebugLibraryResources FROM-CACHE
+> Task :core-contracts:parseDebugLocalResources FROM-CACHE
+> Task :inference_process:compileDebugAidl FROM-CACHE
+> Task :core-contracts:generateDebugRFile FROM-CACHE
+> Task :core-contracts:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :inference_process:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :inference_process:javaPreCompileDebug FROM-CACHE
+> Task :ui-validator:compileKotlin FROM-CACHE
+> Task :ui-validator:compileJava NO-SOURCE
+> Task :inference_process:mergeDebugShaders
+> Task :inference_process:compileDebugShaders NO-SOURCE
+> Task :inference_process:generateDebugAssets UP-TO-DATE
+> Task :inference_process:mergeDebugAssets
+> Task :ui-validator:processResources
+> Task :ui-validator:classes
+> Task :ui-validator:jar
+> Task :inference_process:configureCMakeDebug[arm64-v8a]
+> Task :core-contracts:compileDebugKotlin FROM-CACHE
+> Task :core-contracts:javaPreCompileDebug FROM-CACHE
+> Task :core-contracts:compileDebugJavaWithJavac NO-SOURCE
+> Task :provider-adapters:clean
+> Task :provider-adapters:preBuild UP-TO-DATE
+> Task :provider-adapters:preDebugBuild UP-TO-DATE
+> Task :provider-adapters:writeDebugAarMetadata
+> Task :provider-adapters:processDebugNavigationResources FROM-CACHE
+> Task :core-contracts:mergeDebugShaders
+> Task :core-contracts:compileDebugShaders NO-SOURCE
+> Task :core-contracts:generateDebugAssets UP-TO-DATE
+> Task :provider-adapters:generateDebugResValues FROM-CACHE
+> Task :provider-adapters:generateDebugResources FROM-CACHE
+> Task :core-contracts:mergeDebugAssets
+> Task :provider-adapters:packageDebugResources FROM-CACHE
+> Task :provider-adapters:extractDeepLinksDebug FROM-CACHE
+> Task :app:clean FAILED
+> Task :provider-adapters:processDebugManifest FROM-CACHE
+> Task :provider-adapters:compileDebugLibraryResources FROM-CACHE
+> Task :provider-adapters:parseDebugLocalResources FROM-CACHE
+> Task :core-contracts:processDebugJavaRes
+> Task :core-contracts:bundleLibRuntimeToJarDebug
+> Task :core-contracts:bundleLibCompileToJarDebug
+> Task :inference_process:buildCMakeDebug[arm64-v8a]
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:clean'.
+> java.io.IOException: Unable to delete directory 'C:\Users\anon3\Downloads\ShadowAi\app\build'
+    New files were found. This might happen because a process is still writing to the target directory.
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\META-INF
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\META-INF\app_debug.kotlin_module
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app\tools
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app\di
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\incremental
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\incremental\transformDebugClassesWithAsm
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\classes
+    - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\classes\debug
+    - and more ...
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:clean'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.gradle.api.UncheckedIOException: java.io.IOException: Unable to delete directory 'C:\Users\anon3\Downloads\ShadowAi\app\build'
+  New files were found. This might happen because a process is still writing to the target directory.
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\META-INF
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\META-INF\app_debug.kotlin_module
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app\tools
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app\di
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\incremental
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\incremental\transformDebugClassesWithAsm
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\classes
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\classes\debug
+  - and more ...
+	at org.gradle.internal.UncheckedException.throwAsUncheckedException(UncheckedException.java:63)
+	at org.gradle.internal.UncheckedException.throwAsUncheckedException(UncheckedException.java:42)
+	at org.gradle.internal.reflect.JavaMethod.invoke(JavaMethod.java:128)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.doExecute(StandardTaskAction.java:58)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.execute(StandardTaskAction.java:51)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.execute(StandardTaskAction.java:29)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:244)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:75)
+	at org.gradle.internal.Either$Right.fold(Either.java:175)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:56)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: java.io.IOException: Unable to delete directory 'C:\Users\anon3\Downloads\ShadowAi\app\build'
+  New files were found. This might happen because a process is still writing to the target directory.
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\META-INF
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\META-INF\app_debug.kotlin_module
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app\tools
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\java_res\debug\processDebugJavaRes\out\com\shadowai\app\di
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\incremental
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\incremental\transformDebugClassesWithAsm
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\classes
+  - C:\Users\anon3\Downloads\ShadowAi\app\build\intermediates\classes\debug
+  - and more ...
+	at org.gradle.internal.file.impl.DefaultDeleter.throwWithHelpMessage(DefaultDeleter.java:233)
+	at org.gradle.internal.file.impl.DefaultDeleter.deleteRecursively(DefaultDeleter.java:117)
+	at org.gradle.internal.file.impl.DefaultDeleter.deleteRecursively(DefaultDeleter.java:72)
+	at org.gradle.api.tasks.Delete.clean(Delete.java:56)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.gradle.internal.reflect.JavaMethod.invoke(JavaMethod.java:125)
+	... 117 more
+
+
+BUILD FAILED in 1m 58s
+163 actionable tasks: 64 executed, 94 from cache, 5 up-to-date

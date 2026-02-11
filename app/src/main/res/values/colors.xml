@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SHADOWAI UI Spec v1.0 - OLED-Optimized Operator Console Theme -->
+<!-- Forced Dark Mode: No light theme variants defined -->
+<resources>
+
+    <!-- === CORE TOKENS (Mandatory Compliance) === -->
+    <!-- Pure OLED blacks for maximum contrast and battery efficiency -->
+    <color name="bg_0">#000000</color>      <!-- Background level 0: Deepest black -->
+    <color name="bg_1">#07090C</color>      <!-- Background level 1: Surface dark -->
+    <color name="bg_2">#0E1116</color>      <!-- Background level 2: Elevated surfaces -->
+    <color name="bg_3">#161B22</color>      <!-- Background level 3: Highest elevation -->
+
+    <!-- === SEMANTIC SIGNAL COLORS === -->
+    <!-- Emerald: Primary signal for success, active states, and positive feedback -->
+    <color name="emerald_core">#10B981</color>
+    <color name="emerald_muted">#059669</color>
+    <color name="emerald_surface">#064E3B</color>
+
+    <!-- Amber: Warning and caution signals -->
+    <color name="amber_core">#F59E0B</color>
+    <color name="amber_muted">#D97706</color>
+    <color name="amber_surface">#78350F</color>
+
+    <!-- Rose: Error and failure signals -->
+    <color name="rose_core">#F43F5E</color>
+    <color name="rose_muted">#E11D48</color>
+    <color name="rose_surface">#881337</color>
+
+    <!-- Indigo: Informational and neutral signals -->
+    <color name="indigo_core">#6366F1</color>
+    <color name="indigo_muted">#4F46E5</color>
+    <color name="indigo_surface">#312E81</color>
+
+    <!-- === TEXT & ICONS === -->
+    <!-- Primary text: Maximum contrast for readability -->
+    <color name="on_primary_bg">#E6E8EB</color>  <!-- Text on dark backgrounds -->
+    <color name="on_secondary_bg">#9CA3AF</color> <!-- Secondary text -->
+    <color name="on_disabled">#4B5563</color>     <!-- Disabled state -->
+
+    <!-- === SEMANTIC MAPPING (MD3 Role Alignment) === -->
+    <!-- Primary actions and key interactive elements -->
+    <color name="primary">@color/emerald_core</color>
+    <color name="onPrimary">@color/bg_0</color>
+    <color name="primaryContainer">@color/emerald_surface</color>
+    <color name="onPrimaryContainer">@color/on_primary_bg</color>
+
+    <!-- Secondary elements and supporting UI -->
+    <color name="secondary">@color/indigo_core</color>
+    <color name="onSecondary">@color/bg_0</color>
+    <color name="secondaryContainer">@color/indigo_surface</color>
+    <color name="onSecondaryContainer">@color/on_primary_bg</color>
+
+    <!-- Tertiary accents for highlights -->
+    <color name="tertiary">@color/amber_core</color>
+    <color name="onTertiary">@color/bg_0</color>
+    <color name="tertiaryContainer">@color/amber_surface</color>
+    <color name="onTertiaryContainer">@color/on_primary_bg</color>
+
+    <!-- Error states -->
+    <color name="error">@color/rose_core</color>
+    <color name="onError">@color/bg_0</color>
+    <color name="errorContainer">@color/rose_surface</color>
+    <color name="onErrorContainer">@color/on_primary_bg</color>
+
+    <!-- Background and Surface layers -->
+    <color name="background">@color/bg_0</color>
+    <color name="onBackground">@color/on_primary_bg</color>
+
+    <!-- Surface colors: MUST use alpha transparency -->
+    <color name="surface">#CC0E1116</color>       <!-- Surface level 1 with transparency -->
+    <color name="onSurface">@color/on_primary_bg</color>
+    <color name="surfaceVariant">#800E1116</color> <!-- Surface level 2 -->
+    <color name="onSurfaceVariant">@color/on_secondary_bg</color>
+
+    <!-- Outlines and dividers -->
+    <color name="outline">#30363D</color>
+    <color name="outlineVariant">#21262D</color>
+
+    <!-- Inverse colors for highlighted states -->
+    <color name="inverseSurface">@color/on_primary_bg</color>
+    <color name="inverseOnSurface">@color/bg_0</color>
+    <color name="inversePrimary">@color/emerald_core</color>
+
+    <!-- SCIM: Screen reader only text -->
+    <color name="scrim">#000000</color>
+
+    <!-- === CHAT INTERFACE === -->
+    <color name="chat_user_text">@color/on_primary_bg</color>
+    <color name="chat_ai_bubble">@color/surface</color>
+    <color name="chat_ai_bubble_text">@color/on_primary_bg</color>
+    <color name="chat_user_bubble">@color/emerald_surface</color>
+    <color name="chat_user_bubble_text">@color/on_primary_bg</color>
+    <color name="chat_ai_text">@color/on_primary_bg</color>
+    <color name="chat_ai_bubble_border">@color/outlineVariant</color>
+
+    <!-- === INPUT FIELDS === -->
+    <color name="inputBackground">@color/bg_2</color>
+    <color name="inputText">@color/on_primary_bg</color>
+    <color name="inputHint">@color/on_secondary_bg</color>
+    <color name="inputFocusedBorder">@color/emerald_core</color>
+    <color name="inputUnfocusedBorder">@color/outlineVariant</color>
+    <color name="inputErrorBorder">@color/rose_core</color>
+
+    <!-- === INTERACTION STATES === -->
+    <color name="ripple">#20E6E8EB</color>
+    <color name="rippleDark">#10000000</color>
+    <color name="hover">#0FFFFFFF</color>
+    <color name="focus">#20E6E8EB</color>
+    <color name="pressed">#30FFFFFF</color>
+    <color name="dragTarget">#10E6E8EB</color>
+
+    <!-- === STATUS INDICATORS === -->
+    <color name="status_ready">@color/emerald_core</color>
+    <color name="status_processing">@color/amber_core</color>
+    <color name="status_error">@color/rose_core</color>
+    <color name="status_offline">@color/on_disabled</color>
+
+    <!-- === CODE BLOCKS === -->
+    <color name="codeBlockBg">@color/bg_1</color>
+
+    <!-- === LEGACY ALIASES (For backward compatibility) === -->
+    <color name="colorPrimary">@color/primary</color>
+    <color name="colorPrimaryDark">@color/primaryContainer</color>
+    <color name="colorSecondary">@color/secondary</color>
+    <color name="colorAccent">@color/tertiary</color>
+    <color name="colorError">@color/error</color>
+    <color name="bgPrimary">@color/background</color>
+    <color name="bgSecondary">@color/surface</color>
+    <color name="bgCard">@color/surface</color>
+    <color name="bgInput">@color/inputBackground</color>
+    <color name="textPrimary">@color/onSurface</color>
+    <color name="textSecondary">@color/onSurfaceVariant</color>
+    <color name="textMuted">@color/on_disabled</color>
+    <color name="textHint">@color/inputHint</color>
+    <color name="divider">@color/outlineVariant</color>
+    <color name="surfaceOverlay">@color/ripple</color>
+    <color name="colorSuccess">@color/emerald_core</color>
+    <color name="colorWarning">@color/amber_core</color>
+    <color name="colorInfo">@color/indigo_core</color>
+    <color name="rippleColor">@color/ripple</color>
+    <color name="pressedState">@color/pressed</color>
+    <!-- Chat Colors -->
+    <color name="success">@color/emerald_core</color>
+
+</resources>

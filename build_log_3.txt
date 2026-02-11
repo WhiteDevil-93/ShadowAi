@@ -1,0 +1,624 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Configuration on demand is an incubating feature.
+> Task :buildSrc:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :buildSrc:compileKotlin UP-TO-DATE
+> Task :buildSrc:compileJava NO-SOURCE
+> Task :buildSrc:compileGroovy NO-SOURCE
+> Task :buildSrc:pluginDescriptors UP-TO-DATE
+> Task :buildSrc:processResources UP-TO-DATE
+> Task :buildSrc:classes UP-TO-DATE
+> Task :buildSrc:jar UP-TO-DATE
+> Task :build-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :build-plugin:compileKotlin UP-TO-DATE
+> Task :build-plugin:compileJava NO-SOURCE
+> Task :build-plugin:pluginDescriptors UP-TO-DATE
+> Task :build-plugin:processResources UP-TO-DATE
+> Task :build-plugin:classes UP-TO-DATE
+> Task :build-plugin:jar UP-TO-DATE
+> Task :clean
+> Task :backend:clean
+
+> Task :app:externalNativeBuildCleanDebug
+Clean llama-arm64-v8a, llama_jni-arm64-v8a
+
+> Task :app:externalNativeBuildCleanRelease
+
+> Task :inference_process:externalNativeBuildCleanDebug
+Clean llama-arm64-v8a, llama_jni-arm64-v8a
+
+> Task :inference_process:externalNativeBuildCleanRelease
+> Task :ui-validator:clean
+> Task :ui-validator:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core-contracts:clean
+> Task :core-contracts:preBuild UP-TO-DATE
+> Task :core-contracts:preDebugBuild UP-TO-DATE
+> Task :core-contracts:writeDebugAarMetadata
+> Task :core-contracts:processDebugNavigationResources FROM-CACHE
+> Task :core-contracts:generateDebugResValues FROM-CACHE
+> Task :core-contracts:generateDebugResources FROM-CACHE
+> Task :core-contracts:packageDebugResources FROM-CACHE
+> Task :core-contracts:extractDeepLinksDebug FROM-CACHE
+> Task :core-contracts:processDebugManifest FROM-CACHE
+> Task :core-contracts:compileDebugLibraryResources FROM-CACHE
+> Task :core-contracts:parseDebugLocalResources FROM-CACHE
+> Task :core-contracts:generateDebugRFile FROM-CACHE
+> Task :core-contracts:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :ui-validator:kaptGenerateStubsKotlin FROM-CACHE
+> Task :ui-composition:clean
+> Task :artifact-system:clean
+> Task :artifact-system:preBuild UP-TO-DATE
+> Task :artifact-system:preDebugBuild UP-TO-DATE
+> Task :app:clean
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :artifact-system:writeDebugAarMetadata
+> Task :ui-validator:kaptKotlin FROM-CACHE
+> Task :diagnostics:clean
+> Task :diagnostics:preBuild UP-TO-DATE
+> Task :diagnostics:preDebugBuild UP-TO-DATE
+> Task :artifact-system:processDebugNavigationResources FROM-CACHE
+> Task :app:generateDebugBuildConfig FROM-CACHE
+> Task :ui-params:clean
+> Task :ui-params:preBuild UP-TO-DATE
+> Task :ui-params:preDebugBuild UP-TO-DATE
+> Task :diagnostics:writeDebugAarMetadata
+> Task :app:generateDebugResValues FROM-CACHE
+> Task :ui-params:writeDebugAarMetadata
+> Task :diagnostics:processDebugNavigationResources FROM-CACHE
+> Task :artifact-system:generateDebugResValues FROM-CACHE
+> Task :diagnostics:generateDebugResValues FROM-CACHE
+> Task :ui-params:processDebugNavigationResources FROM-CACHE
+> Task :diagnostics:generateDebugResources FROM-CACHE
+> Task :artifact-system:generateDebugResources FROM-CACHE
+> Task :app:injectCrashlyticsMappingFileIdDebug
+> Task :ui-params:generateDebugResValues FROM-CACHE
+> Task :app:processDebugGoogleServices FROM-CACHE
+> Task :inference_process:clean
+> Task :inference_process:preBuild UP-TO-DATE
+> Task :ui-params:generateDebugResources FROM-CACHE
+> Task :inference_process:preDebugBuild UP-TO-DATE
+> Task :inference_process:writeDebugAarMetadata
+> Task :diagnostics:packageDebugResources FROM-CACHE
+> Task :artifact-system:packageDebugResources FROM-CACHE
+> Task :pipeline-planner:clean
+> Task :pipeline-planner:preBuild UP-TO-DATE
+> Task :pipeline-planner:preDebugBuild UP-TO-DATE
+> Task :pipeline-planner:writeDebugAarMetadata
+> Task :model-catalog:clean
+> Task :model-catalog:preBuild UP-TO-DATE
+> Task :model-catalog:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResources FROM-CACHE
+> Task :diagnostics:extractDeepLinksDebug FROM-CACHE
+> Task :pipeline-planner:processDebugNavigationResources FROM-CACHE
+> Task :model-catalog:writeDebugAarMetadata
+> Task :inference_process:processDebugNavigationResources FROM-CACHE
+> Task :model-catalog:processDebugNavigationResources FROM-CACHE
+> Task :artifact-system:extractDeepLinksDebug FROM-CACHE
+> Task :model-catalog:generateDebugResValues FROM-CACHE
+> Task :ui-params:packageDebugResources FROM-CACHE
+> Task :pipeline-planner:generateDebugResValues FROM-CACHE
+> Task :inference_process:generateDebugResValues FROM-CACHE
+> Task :model-catalog:generateDebugResources FROM-CACHE
+> Task :pipeline-planner:generateDebugResources FROM-CACHE
+> Task :ui-params:extractDeepLinksDebug FROM-CACHE
+> Task :inference_process:generateDebugResources FROM-CACHE
+> Task :diagnostics:processDebugManifest FROM-CACHE
+> Task :ui-validator:compileKotlin FROM-CACHE
+> Task :ui-validator:compileJava NO-SOURCE
+> Task :diagnostics:compileDebugLibraryResources FROM-CACHE
+> Task :ui-params:processDebugManifest FROM-CACHE
+> Task :pipeline-planner:packageDebugResources FROM-CACHE
+> Task :ui-params:compileDebugLibraryResources FROM-CACHE
+> Task :pipeline-planner:extractDeepLinksDebug FROM-CACHE
+> Task :diagnostics:parseDebugLocalResources FROM-CACHE
+> Task :model-catalog:packageDebugResources FROM-CACHE
+> Task :artifact-system:processDebugManifest FROM-CACHE
+> Task :artifact-system:compileDebugLibraryResources FROM-CACHE
+> Task :model-catalog:extractDeepLinksDebug FROM-CACHE
+> Task :artifact-system:parseDebugLocalResources FROM-CACHE
+> Task :ui-params:parseDebugLocalResources FROM-CACHE
+> Task :artifact-system:generateDebugRFile FROM-CACHE
+> Task :pipeline-planner:processDebugManifest FROM-CACHE
+> Task :inference_process:packageDebugResources FROM-CACHE
+> Task :model-catalog:processDebugManifest FROM-CACHE
+> Task :diagnostics:generateDebugRFile FROM-CACHE
+> Task :diagnostics:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :inference_process:extractDeepLinksDebug FROM-CACHE
+> Task :artifact-system:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :pipeline-planner:compileDebugLibraryResources FROM-CACHE
+> Task :model-catalog:compileDebugLibraryResources FROM-CACHE
+> Task :ui-validator:processResources
+> Task :ui-params:generateDebugRFile FROM-CACHE
+> Task :ui-params:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :ui-validator:classes
+> Task :ui-params:javaPreCompileDebug FROM-CACHE
+> Task :pipeline-planner:parseDebugLocalResources FROM-CACHE
+> Task :model-catalog:parseDebugLocalResources FROM-CACHE
+> Task :pipeline-planner:generateDebugRFile FROM-CACHE
+> Task :pipeline-planner:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :model-catalog:generateDebugRFile FROM-CACHE
+> Task :inference_process:processDebugManifest FROM-CACHE
+> Task :model-catalog:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:packageDebugResources FROM-CACHE
+> Task :inference_process:compileDebugLibraryResources FROM-CACHE
+> Task :core-contracts:compileDebugKotlin FROM-CACHE
+> Task :hot-swapping:clean
+> Task :hot-swapping:preBuild UP-TO-DATE
+> Task :hot-swapping:preDebugBuild UP-TO-DATE
+> Task :core-contracts:javaPreCompileDebug FROM-CACHE
+> Task :core-contracts:compileDebugJavaWithJavac NO-SOURCE
+> Task :inference_process:parseDebugLocalResources FROM-CACHE
+> Task :app:createDebugCompatibleScreenManifests
+> Task :hot-swapping:writeDebugAarMetadata
+> Task :app:extractDeepLinksDebug FROM-CACHE
+> Task :inference_process:generateDebugRFile FROM-CACHE
+> Task :ui-params:mergeDebugShaders
+> Task :ui-params:compileDebugShaders NO-SOURCE
+> Task :ui-params:generateDebugAssets UP-TO-DATE
+> Task :ui-params:mergeDebugAssets
+> Task :ui-params:mergeDebugJniLibFolders
+> Task :ui-params:mergeDebugNativeLibs NO-SOURCE
+> Task :hot-swapping:processDebugNavigationResources FROM-CACHE
+> Task :ui-params:copyDebugJniLibsProjectOnly
+> Task :hot-swapping:generateDebugResValues FROM-CACHE
+> Task :artifact-system:javaPreCompileDebug FROM-CACHE
+> Task :diagnostics:javaPreCompileDebug FROM-CACHE
+> Task :app:javaPreCompileDebug FROM-CACHE
+> Task :model-catalog:javaPreCompileDebug FROM-CACHE
+> Task :pipeline-planner:javaPreCompileDebug FROM-CACHE
+> Task :core-contracts:mergeDebugShaders
+> Task :core-contracts:compileDebugShaders NO-SOURCE
+> Task :core-contracts:generateDebugAssets UP-TO-DATE
+> Task :hot-swapping:generateDebugResources FROM-CACHE
+> Task :ui-validator:jar
+> Task :artifact-system:mergeDebugShaders
+> Task :artifact-system:compileDebugShaders NO-SOURCE
+> Task :artifact-system:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugShaders
+> Task :model-catalog:mergeDebugShaders
+> Task :pipeline-planner:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :pipeline-planner:compileDebugShaders NO-SOURCE
+> Task :pipeline-planner:generateDebugAssets UP-TO-DATE
+> Task :model-catalog:compileDebugShaders NO-SOURCE
+> Task :model-catalog:generateDebugAssets UP-TO-DATE
+> Task :diagnostics:mergeDebugShaders
+> Task :core-contracts:mergeDebugAssets
+> Task :artifact-system:mergeDebugAssets
+> Task :diagnostics:compileDebugShaders NO-SOURCE
+> Task :diagnostics:generateDebugAssets UP-TO-DATE
+> Task :pipeline-planner:mergeDebugAssets
+> Task :artifact-system:mergeDebugJniLibFolders
+> Task :pipeline-planner:mergeDebugJniLibFolders
+> Task :pipeline-planner:mergeDebugNativeLibs NO-SOURCE
+> Task :artifact-system:mergeDebugNativeLibs NO-SOURCE
+> Task :model-catalog:mergeDebugAssets
+> Task :pipeline-planner:copyDebugJniLibsProjectOnly
+> Task :artifact-system:copyDebugJniLibsProjectOnly
+> Task :hot-swapping:packageDebugResources FROM-CACHE
+> Task :model-catalog:mergeDebugJniLibFolders
+> Task :model-catalog:mergeDebugNativeLibs NO-SOURCE
+> Task :hot-swapping:extractDeepLinksDebug FROM-CACHE
+> Task :model-catalog:copyDebugJniLibsProjectOnly
+> Task :diagnostics:mergeDebugAssets
+> Task :core-contracts:processDebugJavaRes
+> Task :diagnostics:mergeDebugJniLibFolders
+> Task :diagnostics:mergeDebugNativeLibs NO-SOURCE
+> Task :hot-swapping:processDebugManifest FROM-CACHE
+> Task :core-contracts:mergeDebugJniLibFolders
+> Task :diagnostics:copyDebugJniLibsProjectOnly
+> Task :hot-swapping:compileDebugLibraryResources FROM-CACHE
+> Task :core-contracts:mergeDebugNativeLibs NO-SOURCE
+> Task :core-contracts:copyDebugJniLibsProjectOnly
+> Task :hot-swapping:parseDebugLocalResources FROM-CACHE
+> Task :hot-swapping:generateDebugRFile FROM-CACHE
+> Task :hot-swapping:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core-contracts:bundleLibRuntimeToJarDebug
+> Task :hot-swapping:javaPreCompileDebug FROM-CACHE
+> Task :inference_process:compileDebugAidl FROM-CACHE
+> Task :core-contracts:bundleLibCompileToJarDebug
+> Task :inference_process:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :hot-swapping:mergeDebugShaders
+> Task :hot-swapping:compileDebugShaders NO-SOURCE
+> Task :hot-swapping:generateDebugAssets UP-TO-DATE
+> Task :hot-swapping:mergeDebugAssets
+> Task :hot-swapping:mergeDebugJniLibFolders
+> Task :hot-swapping:mergeDebugNativeLibs NO-SOURCE
+> Task :hot-swapping:copyDebugJniLibsProjectOnly
+> Task :core-contracts:bundleLibRuntimeToDirDebug
+> Task :provider-adapters:clean
+> Task :provider-adapters:preBuild UP-TO-DATE
+> Task :provider-adapters:preDebugBuild UP-TO-DATE
+> Task :provider-adapters:writeDebugAarMetadata
+> Task :provider-adapters:processDebugNavigationResources FROM-CACHE
+> Task :provider-adapters:generateDebugResValues FROM-CACHE
+> Task :provider-adapters:generateDebugResources FROM-CACHE
+> Task :provider-adapters:packageDebugResources FROM-CACHE
+> Task :provider-adapters:extractDeepLinksDebug FROM-CACHE
+> Task :provider-adapters:processDebugManifest FROM-CACHE
+> Task :provider-adapters:compileDebugLibraryResources FROM-CACHE
+> Task :provider-adapters:parseDebugLocalResources FROM-CACHE
+> Task :provider-adapters:generateDebugRFile FROM-CACHE
+> Task :provider-adapters:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :provider-adapters:javaPreCompileDebug FROM-CACHE
+> Task :provider-adapters:mergeDebugShaders
+> Task :provider-adapters:compileDebugShaders NO-SOURCE
+> Task :provider-adapters:generateDebugAssets UP-TO-DATE
+> Task :inference_process:javaPreCompileDebug FROM-CACHE
+> Task :provider-adapters:mergeDebugAssets
+> Task :inference_process:mergeDebugShaders
+> Task :provider-adapters:mergeDebugJniLibFolders
+> Task :inference_process:compileDebugShaders NO-SOURCE
+> Task :inference_process:generateDebugAssets UP-TO-DATE
+> Task :provider-adapters:mergeDebugNativeLibs NO-SOURCE
+> Task :provider-adapters:copyDebugJniLibsProjectOnly
+> Task :inference_process:mergeDebugAssets
+> Task :inference_process:configureCMakeDebug[arm64-v8a]
+> Task :artifact-system:kspDebugKotlin
+> Task :app:desugarDebugFileDependencies FROM-CACHE
+
+> Task :inference_process:kaptGenerateStubsDebugKotlin
+w: Kapt currently doesn't support language version 2.0+. Falling back to 1.9.
+
+> Task :artifact-system:compileDebugKotlin
+> Task :model-catalog:kspDebugKotlin
+
+> Task :ui-params:compileDebugKotlin
+w: file:///C:/Users/anon3/Downloads/ShadowAi/ui-params/src/main/kotlin/com/shadowai/uiparams/ParameterDiffer.kt:227:40 Unchecked cast of 'kotlin.collections.Map<*, *>' to 'kotlin.collections.Map<kotlin.String, kotlin.Any?>'.
+w: file:///C:/Users/anon3/Downloads/ShadowAi/ui-params/src/main/kotlin/com/shadowai/uiparams/ParameterRenderer.kt:177:29 Condition is always 'true'.
+w: file:///C:/Users/anon3/Downloads/ShadowAi/ui-params/src/main/kotlin/com/shadowai/uiparams/ParameterSerializer.kt:216:45 Unchecked cast of 'kotlin.Any?' to 'kotlin.collections.List<kotlin.Any>'.
+w: file:///C:/Users/anon3/Downloads/ShadowAi/ui-params/src/main/kotlin/com/shadowai/uiparams/ParameterSerializer.kt:239:45 Unchecked cast of 'kotlin.Any?' to 'kotlin.Pair<kotlin.Number, kotlin.Number>'.
+
+> Task :ui-params:compileDebugJavaWithJavac NO-SOURCE
+> Task :ui-params:bundleLibCompileToJarDebug
+> Task :ui-params:bundleLibRuntimeToJarDebug
+> Task :ui-params:processDebugJavaRes
+> Task :app:checkDebugAarMetadata
+> Task :ui-params:bundleLibRuntimeToDirDebug
+> Task :app:processDebugNavigationResources FROM-CACHE
+> Task :app:compileDebugNavigationResources FROM-CACHE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:mergeDebugResources FROM-CACHE
+> Task :app:parseDebugLocalResources FROM-CACHE
+> Task :model-catalog:compileDebugKotlin
+> Task :app:processDebugMainManifest FROM-CACHE
+> Task :app:processDebugManifest FROM-CACHE
+> Task :app:processDebugManifestForPackage FROM-CACHE
+> Task :app:processDebugResources FROM-CACHE
+> Task :artifact-system:compileDebugJavaWithJavac
+> Task :app:mergeDebugAssets
+> Task :app:compressDebugAssets FROM-CACHE
+> Task :artifact-system:processDebugJavaRes
+> Task :app:configureCMakeDebug[arm64-v8a]
+> Task :app:checkDebugDuplicateClasses
+> Task :artifact-system:transformDebugClassesWithAsm
+> Task :artifact-system:bundleLibCompileToJarDebug
+> Task :artifact-system:bundleLibRuntimeToJarDebug
+> Task :artifact-system:bundleLibRuntimeToDirDebug
+> Task :model-catalog:compileDebugJavaWithJavac
+> Task :model-catalog:processDebugJavaRes
+> Task :model-catalog:transformDebugClassesWithAsm
+> Task :model-catalog:bundleLibRuntimeToJarDebug
+> Task :model-catalog:bundleLibCompileToJarDebug
+> Task :model-catalog:bundleLibRuntimeToDirDebug
+> Task :inference_process:buildCMakeDebug[arm64-v8a]
+> Task :app:buildCMakeDebug[arm64-v8a]
+> Task :provider-adapters:kspDebugKotlin
+
+> Task :provider-adapters:compileDebugKotlin
+w: file:///C:/Users/anon3/Downloads/ShadowAi/provider-adapters/src/main/kotlin/com/shadowai/provideradapters/NovelAIAdapter.kt:144:68 Unchecked cast of 'kotlin.Result<kotlin.Any>' to 'kotlin.Result<kotlin.String>'.
+w: file:///C:/Users/anon3/Downloads/ShadowAi/provider-adapters/src/main/kotlin/com/shadowai/provideradapters/NovelAIAdapter.kt:155:69 Unchecked cast of 'kotlin.Result<kotlin.Any>' to 'kotlin.Result<com.shadowai.provideradapters.NovelAIAdapter.NovelAIImageResult>'.
+w: file:///C:/Users/anon3/Downloads/ShadowAi/provider-adapters/src/main/kotlin/com/shadowai/provideradapters/PixAIAdapter.kt:146:69 Unchecked cast of 'kotlin.Result<kotlin.Any>' to 'kotlin.Result<com.shadowai.provideradapters.PixAIAdapter.PixAIImageResult>'.
+w: file:///C:/Users/anon3/Downloads/ShadowAi/provider-adapters/src/main/kotlin/com/shadowai/provideradapters/ProviderModelRepository.kt:44:28 'fun saveSync(provider: Provider): Unit' is deprecated. Use saveProvider() suspend function instead.
+w: file:///C:/Users/anon3/Downloads/ShadowAi/provider-adapters/src/main/kotlin/com/shadowai/provideradapters/ProviderModelRepository.kt:84:28 'fun saveSync(provider: Provider): Unit' is deprecated. Use saveProvider() suspend function instead.
+
+> Task :provider-adapters:compileDebugJavaWithJavac
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\di\ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory.java:27: error: duplicate class: com.shadowai.provideradapters.di.ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory
+public final class ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory implements Factory<CoroutineScope> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\LocalLlamaAdapter_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.LocalLlamaAdapter_Factory
+public final class LocalLlamaAdapter_Factory implements Factory<LocalLlamaAdapter> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderAdapterFactory_Factory.java:30: error: duplicate class: com.shadowai.provideradapters.ProviderAdapterFactory_Factory
+public final class ProviderAdapterFactory_Factory implements Factory<ProviderAdapterFactory> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderCrudRepository_Factory.java:30: error: duplicate class: com.shadowai.provideradapters.ProviderCrudRepository_Factory
+public final class ProviderCrudRepository_Factory implements Factory<ProviderCrudRepository> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderModelDiscovery_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderModelDiscovery_Factory
+public final class ProviderModelDiscovery_Factory implements Factory<ProviderModelDiscovery> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderModelRepository_Factory.java:29: error: duplicate class: com.shadowai.provideradapters.ProviderModelRepository_Factory
+public final class ProviderModelRepository_Factory implements Factory<ProviderModelRepository> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderNetworkTester_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderNetworkTester_Factory
+public final class ProviderNetworkTester_Factory implements Factory<ProviderNetworkTester> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderRepositoryImpl_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderRepositoryImpl_Factory
+public final class ProviderRepositoryImpl_Factory implements Factory<ProviderRepositoryImpl> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderSecretRepository_Factory.java:29: error: duplicate class: com.shadowai.provideradapters.ProviderSecretRepository_Factory
+public final class ProviderSecretRepository_Factory implements Factory<ProviderSecretRepository> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\StubLocalModelEngine_Factory.java:25: error: duplicate class: com.shadowai.provideradapters.StubLocalModelEngine_Factory
+public final class StubLocalModelEngine_Factory implements Factory<StubLocalModelEngine> {
+             ^
+10 errors
+
+> Task :provider-adapters:compileDebugJavaWithJavac FAILED
+w: Detected multiple Kotlin daemon sessions at 
+
+[Incubating] Problems report is available at: file:///C:/Users/anon3/Downloads/ShadowAi/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':provider-adapters:compileDebugJavaWithJavac'.
+> Compilation failed; see the compiler output below.
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\di\ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory.java:27: error: duplicate class: com.shadowai.provideradapters.di.ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory
+  public final class ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory implements Factory<CoroutineScope> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\LocalLlamaAdapter_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.LocalLlamaAdapter_Factory
+  public final class LocalLlamaAdapter_Factory implements Factory<LocalLlamaAdapter> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderAdapterFactory_Factory.java:30: error: duplicate class: com.shadowai.provideradapters.ProviderAdapterFactory_Factory
+  public final class ProviderAdapterFactory_Factory implements Factory<ProviderAdapterFactory> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderCrudRepository_Factory.java:30: error: duplicate class: com.shadowai.provideradapters.ProviderCrudRepository_Factory
+  public final class ProviderCrudRepository_Factory implements Factory<ProviderCrudRepository> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderModelDiscovery_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderModelDiscovery_Factory
+  public final class ProviderModelDiscovery_Factory implements Factory<ProviderModelDiscovery> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderModelRepository_Factory.java:29: error: duplicate class: com.shadowai.provideradapters.ProviderModelRepository_Factory
+  public final class ProviderModelRepository_Factory implements Factory<ProviderModelRepository> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderNetworkTester_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderNetworkTester_Factory
+  public final class ProviderNetworkTester_Factory implements Factory<ProviderNetworkTester> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderRepositoryImpl_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderRepositoryImpl_Factory
+  public final class ProviderRepositoryImpl_Factory implements Factory<ProviderRepositoryImpl> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderSecretRepository_Factory.java:29: error: duplicate class: com.shadowai.provideradapters.ProviderSecretRepository_Factory
+  public final class ProviderSecretRepository_Factory implements Factory<ProviderSecretRepository> {
+               ^
+  C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\StubLocalModelEngine_Factory.java:25: error: duplicate class: com.shadowai.provideradapters.StubLocalModelEngine_Factory
+  public final class StubLocalModelEngine_Factory implements Factory<StubLocalModelEngine> {
+               ^
+  10 errors
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':provider-adapters:compileDebugJavaWithJavac'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.gradle.api.internal.tasks.compile.CompilationFailedException: Compilation failed; see the compiler output below.
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\di\ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory.java:27: error: duplicate class: com.shadowai.provideradapters.di.ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory
+public final class ProviderAdaptersModule_Companion_ProvideApplicationScopeFactory implements Factory<CoroutineScope> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\LocalLlamaAdapter_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.LocalLlamaAdapter_Factory
+public final class LocalLlamaAdapter_Factory implements Factory<LocalLlamaAdapter> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderAdapterFactory_Factory.java:30: error: duplicate class: com.shadowai.provideradapters.ProviderAdapterFactory_Factory
+public final class ProviderAdapterFactory_Factory implements Factory<ProviderAdapterFactory> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderCrudRepository_Factory.java:30: error: duplicate class: com.shadowai.provideradapters.ProviderCrudRepository_Factory
+public final class ProviderCrudRepository_Factory implements Factory<ProviderCrudRepository> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderModelDiscovery_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderModelDiscovery_Factory
+public final class ProviderModelDiscovery_Factory implements Factory<ProviderModelDiscovery> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderModelRepository_Factory.java:29: error: duplicate class: com.shadowai.provideradapters.ProviderModelRepository_Factory
+public final class ProviderModelRepository_Factory implements Factory<ProviderModelRepository> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderNetworkTester_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderNetworkTester_Factory
+public final class ProviderNetworkTester_Factory implements Factory<ProviderNetworkTester> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderRepositoryImpl_Factory.java:28: error: duplicate class: com.shadowai.provideradapters.ProviderRepositoryImpl_Factory
+public final class ProviderRepositoryImpl_Factory implements Factory<ProviderRepositoryImpl> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\ProviderSecretRepository_Factory.java:29: error: duplicate class: com.shadowai.provideradapters.ProviderSecretRepository_Factory
+public final class ProviderSecretRepository_Factory implements Factory<ProviderSecretRepository> {
+             ^
+C:\Users\anon3\Downloads\ShadowAi\provider-adapters\build\generated\ksp\debug\java\com\shadowai\provideradapters\StubLocalModelEngine_Factory.java:25: error: duplicate class: com.shadowai.provideradapters.StubLocalModelEngine_Factory
+public final class StubLocalModelEngine_Factory implements Factory<StubLocalModelEngine> {
+             ^
+10 errors
+	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:89)
+	at org.gradle.api.internal.tasks.compile.JdkJavaCompiler.execute(JdkJavaCompiler.java:50)
+	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.delegateAndHandleErrors(NormalizingJavaCompiler.java:98)
+	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.execute(NormalizingJavaCompiler.java:52)
+	at org.gradle.api.internal.tasks.compile.NormalizingJavaCompiler.execute(NormalizingJavaCompiler.java:38)
+	at org.gradle.api.internal.tasks.compile.AnnotationProcessorDiscoveringCompiler.execute(AnnotationProcessorDiscoveringCompiler.java:52)
+	at org.gradle.api.internal.tasks.compile.AnnotationProcessorDiscoveringCompiler.execute(AnnotationProcessorDiscoveringCompiler.java:38)
+	at org.gradle.api.internal.tasks.compile.ModuleApplicationNameWritingCompiler.execute(ModuleApplicationNameWritingCompiler.java:46)
+	at org.gradle.api.internal.tasks.compile.ModuleApplicationNameWritingCompiler.execute(ModuleApplicationNameWritingCompiler.java:36)
+	at org.gradle.jvm.toolchain.internal.DefaultToolchainJavaCompiler.execute(DefaultToolchainJavaCompiler.java:57)
+	at org.gradle.api.tasks.compile.JavaCompile.lambda$createToolchainCompiler$3(JavaCompile.java:206)
+	at org.gradle.api.internal.tasks.compile.CleaningJavaCompiler.execute(CleaningJavaCompiler.java:53)
+	at org.gradle.api.internal.tasks.compile.incremental.IncrementalCompilerFactory.lambda$createRebuildAllCompiler$0(IncrementalCompilerFactory.java:55)
+	at org.gradle.api.internal.tasks.compile.incremental.SelectiveCompiler.execute(SelectiveCompiler.java:70)
+	at org.gradle.api.internal.tasks.compile.incremental.SelectiveCompiler.execute(SelectiveCompiler.java:44)
+	at org.gradle.api.internal.tasks.compile.incremental.IncrementalResultStoringCompiler.execute(IncrementalResultStoringCompiler.java:66)
+	at org.gradle.api.internal.tasks.compile.incremental.IncrementalResultStoringCompiler.execute(IncrementalResultStoringCompiler.java:52)
+	at org.gradle.api.internal.tasks.compile.CompileJavaBuildOperationReportingCompiler$1.call(CompileJavaBuildOperationReportingCompiler.java:64)
+	at org.gradle.api.internal.tasks.compile.CompileJavaBuildOperationReportingCompiler$1.call(CompileJavaBuildOperationReportingCompiler.java:48)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.compile.CompileJavaBuildOperationReportingCompiler.execute(CompileJavaBuildOperationReportingCompiler.java:48)
+	at org.gradle.api.tasks.compile.JavaCompile.performCompilation(JavaCompile.java:224)
+	at org.gradle.api.tasks.compile.JavaCompile.performIncrementalCompilation(JavaCompile.java:165)
+	at org.gradle.api.tasks.compile.JavaCompile.compile(JavaCompile.java:150)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.gradle.internal.reflect.JavaMethod.invoke(JavaMethod.java:125)
+	at org.gradle.api.internal.project.taskfactory.IncrementalTaskAction.doExecute(IncrementalTaskAction.java:45)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.execute(StandardTaskAction.java:51)
+	at org.gradle.api.internal.project.taskfactory.IncrementalTaskAction.execute(IncrementalTaskAction.java:26)
+	at org.gradle.api.internal.project.taskfactory.StandardTaskAction.execute(StandardTaskAction.java:29)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:244)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeAndStoreInCache(BuildCacheStep.java:145)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$4(BuildCacheStep.java:101)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$5(BuildCacheStep.java:101)
+	at org.gradle.internal.Try$Success.map(Try.java:175)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithCache(BuildCacheStep.java:85)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$0(BuildCacheStep.java:74)
+	at org.gradle.internal.Either$Left.fold(Either.java:115)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+
+
+BUILD FAILED in 4m 43s
+223 actionable tasks: 103 executed, 112 from cache, 8 up-to-date

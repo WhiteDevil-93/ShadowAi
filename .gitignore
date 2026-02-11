@@ -1,0 +1,50 @@
+*.iml
+.gradle
+**/\.gradle/
+/local.properties
+/.idea/
+.DS_Store
+**/build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Firebase configuration (contains sensitive API keys)
+google-services.json
+app/google-services.json
+
+# Build outputs
+*.hprof
+*.apk
+*.aab
+
+# Sensitive files
+keystore.properties
+release.keystore
+*.jks
+
+# Environment files (contain API keys)
+.env
+*.env
+.env.*
+backend/.env
+
+# Kotlin compiler cache
+.kotlin/
+**/.kotlin/
+
+# IDE
+.vs/
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Temp files and logs
+.tmp/
+*.log
+firebase-debug.log
+
+# Large binaries that should use Gradle plugin instead
+ktlint.jar

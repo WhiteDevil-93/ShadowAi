@@ -1,0 +1,46 @@
+root = true
+
+# Kotlin Files
+[*.kt]
+indent_style = space
+indent_size = 4
+max_line_length = off
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+ij_kotlin_spaces_around_range = false
+ij_kotlin_spaces_around_unary_operator = false
+
+# Kotlin Script Files
+[*.kts]
+indent_style = space
+indent_size = 4
+max_line_length = off
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+
+# XML Files
+[*.xml]
+indent_style = space
+indent_size = 4
+
+# JSON Files
+[*.json]
+indent_style = space
+indent_size = 2
+
+# YAML/Properties Files
+[*.{yml,yaml,properties}]
+indent_style = space
+indent_size = 2
+
+# Gradle Files
+[*.gradle]
+indent_style = space
+indent_size = 4
+
+# General settings
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true

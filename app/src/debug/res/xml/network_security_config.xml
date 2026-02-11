@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network Security Config: DEBUG builds only.
+  Cleartext traffic restricted to localhost/loopback for:
+  - Ollama local development
+  - Local text/image runtimes
+  - Emulator debug interface (10.0.2.2)
+  Cloud providers (OpenAI, Gemini, etc.) use HTTPS regardless.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain>localhost</domain>
+        <domain>127.0.0.1</domain>
+        <domain>10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

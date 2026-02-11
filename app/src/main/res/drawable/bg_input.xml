@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Input Field Background - Material Design 3 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Focused state -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surfaceVariant" />
+            <corners android:radius="@dimen/corner_radius_text_field" />
+            <stroke
+                android:width="@dimen/stroke_width_medium"
+                android:color="@color/primary" />
+        </shape>
+    </item>
+    
+    <!-- Pressed state -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surfaceVariant" />
+            <corners android:radius="@dimen/corner_radius_text_field" />
+            <stroke
+                android:width="@dimen/stroke_width_thin"
+                android:color="@color/secondary" />
+        </shape>
+    </item>
+    
+    <!-- Error state -->
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/errorContainer" />
+            <corners android:radius="@dimen/corner_radius_text_field" />
+            <stroke
+                android:width="@dimen/stroke_width_thin"
+                android:color="@color/error" />
+        </shape>
+    </item>
+    
+    <!-- Default state -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surfaceVariant" />
+            <corners android:radius="@dimen/corner_radius_text_field" />
+            <stroke
+                android:width="@dimen/stroke_width_thin"
+                android:color="@color/outline" />
+        </shape>
+    </item>
+    
+</selector>

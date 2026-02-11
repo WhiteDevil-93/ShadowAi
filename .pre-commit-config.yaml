@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/pinterest/ktlint
+    rev: 1.8.0
+    hooks:
+      - id: ktlint
+        args: ['--format']
+        stages: [commit]
+        exclude: |
+          (?x)^(
+            legacy_archive/|
+            archive/|
+            build/
+          )
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: |
+          (?x)^(
+            legacy_archive/|
+            archive/|
+            build/
+          )
+      - id: end-of-file-fixer
+        exclude: |
+          (?x)^(
+            legacy_archive/|
+            archive/|
+            build/
+          )
+      - id: check-yaml
+      - id: check-merge-conflict

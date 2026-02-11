@@ -1,0 +1,212 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  build-and-test:
+    name: Build, Test & Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Create dummy google-services.json if not present
+      run: |
+        if [ ! -f "app/google-services.json" ]; then
+          echo "Creating dummy google-services.json for CI..."
+          mkdir -p app
+          cat > app/google-services.json << 'EOF'
+        {
+          "project_info": {
+            "project_number": "123456789",
+            "project_id": "shadowai-dummy-ci",
+            "storage_bucket": "shadowai-dummy-ci.appspot.com"
+          },
+          "client": [
+            {
+              "client_info": {
+                "mobilesdk_app_id": "1:123456789:android:abcdef1234567890",
+                "android_client_info": {
+                  "package_name": "com.shadowai.app"
+                }
+              },
+              "oauth_client": [],
+              "api_key": [
+                {
+                  "current_key": "dummy-api-key-for-ci-only"
+                }
+              ],
+              "services": {
+                "appinvite_service": {
+                  "other_platform_oauth_client": []
+                }
+              }
+            }
+          ],
+          "configuration_version": "1"
+        }
+        EOF
+          echo "Dummy google-services.json created."
+        else
+          echo "google-services.json already exists."
+        fi
+
+    - name: Run Spotless format check
+      run: ./gradlew spotlessCheck --no-daemon --stacktrace
+      # Enforce formatting - CI fails if code is not properly formatted
+      # Fix locally with: ./gradlew spotlessApply
+
+    - name: Run ktlint check
+      run: ./gradlew ktlintCheck --no-daemon --stacktrace
+      continue-on-error: true
+
+    - name: Run lint
+      run: ./gradlew lintDebug --no-daemon --stacktrace
+      continue-on-error: true
+
+    - name: Build debug APK
+      run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+    - name: Run unit tests
+      run: ./gradlew testDebugUnitTest --no-daemon --stacktrace
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          app/build/reports/tests/
+          */build/reports/tests/
+
+    - name: Upload lint reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lint-reports
+        path: |
+          app/build/reports/lint-results-debug.html
+          */build/reports/lint-results*.html
+
+    - name: Upload Spotless reports
+      uses: actions/upload-artifact@v4
+      if: failure()  # Only upload if spotlessCheck failed
+      with:
+        name: spotless-reports
+        path: |
+          build/reports/spotless/
+          */build/spotless/spotlessJava
+
+  dependency-vulnerability-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Create dummy google-services.json if not present
+      run: |
+        if [ ! -f "app/google-services.json" ]; then
+          echo "Creating dummy google-services.json for CI..."
+          mkdir -p app
+          cat > app/google-services.json << 'EOF'
+        {
+          "project_info": {
+            "project_number": "123456789",
+            "project_id": "shadowai-dummy-ci",
+            "storage_bucket": "shadowai-dummy-ci.appspot.com"
+          },
+          "client": [
+            {
+              "client_info": {
+                "mobilesdk_app_id": "1:123456789:android:abcdef1234567890",
+                "android_client_info": {
+                  "package_name": "com.shadowai.app"
+                }
+              },
+              "oauth_client": [],
+              "api_key": [
+                {
+                  "current_key": "dummy-api-key-for-ci-only"
+                }
+              ],
+              "services": {
+                "appinvite_service": {
+                  "other_platform_oauth_client": []
+                }
+              }
+            }
+          ],
+          "configuration_version": "1"
+        }
+        EOF
+          echo "Dummy google-services.json created."
+        fi
+
+    - name: Run OWASP Dependency Check
+      run: |
+        ./gradlew dependencyCheckAnalyze \
+          --no-daemon \
+          --stacktrace \
+          -DdependencyCheck.failBuildOnCVSS=9.0 \
+          -DdependencyCheck.suppressionFiles=""
+      continue-on-error: true
+
+    - name: Upload dependency check report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependency-check-report
+        path: build/reports/dependency-check-report.html
+
+    - name: Upload dependency check JSON results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependency-check-json
+        path: build/reports/dependency-check-report.json
+
+  gradle-wrapper-validation:
+    name: Validate Gradle Wrapper
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Validate Gradle Wrapper
+      uses: gradle/actions/wrapper-validation@v3

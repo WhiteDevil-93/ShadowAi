@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI Avatar Background - Material Design 3 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:type="linear"
+        android:startColor="@color/primaryContainer"
+        android:endColor="@color/surface"
+        android:angle="135" />
+    <stroke
+        android:width="@dimen/stroke_width_thin"
+        android:color="@color/outline" />
+    <size
+        android:width="@dimen/avatar_size_large"
+        android:height="@dimen/avatar_size_large" />
+</shape>

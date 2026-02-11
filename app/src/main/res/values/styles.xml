@@ -1,0 +1,10 @@
+<resources>
+    <!-- Reusable chip appearance following Material 3 guidelines -->
+    <style name="ShadowChip" parent="Widget.Material3.Chip.Assist">
+        <item name="android:textAppearance">@style/TextAppearance.Material3.LabelLarge</item>
+        <item name="android:textColor">@color/onSurface</item>
+        <item name="chipBackgroundColor">@color/surfaceVariant</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipCornerRadius">@dimen/corner_radius_chip</item>
+    </style>
+</resources>

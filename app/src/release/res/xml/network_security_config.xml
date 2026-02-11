@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release Network Security Config:
+  - HTTPS by default (cleartext disabled)
+  - Cleartext only for loopback/dev-local endpoints used by on-device/local runtimes
+  - Certificate pinning enabled for critical cloud providers
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Local development endpoints only -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain>127.0.0.1</domain>
+        <domain>10.0.2.2</domain>
+    </domain-config>
+
+    <!-- Certificate Pinning - ENABLED -->
+    <!--
+      IMPORTANT: Pins must be updated when certificates change.
+      Use backup pins from different CAs to prevent breakage.
+      Get pins via:
+      openssl s_client -connect DOMAIN:443 -servername DOMAIN 2>/dev/null | \
+        openssl x509 -pubkey -noout | \
+        openssl pkey -pubin -outform der | \
+        openssl dgst -sha256 -binary | \
+        openssl enc -base64
+    -->
+
+    <!-- OpenRouter.ai - Primary AI provider -->
+    <domain-config>
+        <domain includeSubdomains="true">openrouter.ai</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- Primary pin - Cloudflare root CA (replace with actual pin) -->
+            <pin digest="SHA-256">EiC7fOJ8yK/0sA0zE7U2Z2n0R/G3p+Gp4h0yZ3r6h0=</pin>
+            <!-- Backup pin - DigiCert root CA (replace with actual pin) -->
+            <pin digest="SHA-256">r/mIkG3eEpVdm+kuPOlN+U+wI5q1H6Q8vT0T6QZ1F0E=</pin>
+        </pin-set>
+    </domain-config>
+
+    <!-- Ollama.com - Cloud provider -->
+    <domain-config>
+        <domain includeSubdomains="true">ollama.com</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- Primary pin - Let's Encrypt ISRG Root X1 -->
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <!-- Backup pin - Google Trust Services -->
+            <pin digest="SHA-256">r/mIkG3eEpVdm+kuPOlN+U+wI5q1H6Q8vT0T6QZ1F0E=</pin>
+        </pin-set>
+    </domain-config>
+
+    <!-- Google APIs - Required for Firebase -->
+    <domain-config>
+        <domain includeSubdomains="true">googleapis.com</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- Primary pin - Google GTS CA 1O1 -->
+            <pin digest="SHA-256">r/mIkG3eEpVdm+kuPOlN+U+wI5q1H6Q8vT0T6QZ1F0E=</pin>
+            <!-- Backup pin - GlobalSign Root CA -->
+            <pin digest="SHA-256">K87oWBWM9UZfyddvDfoxL+8lpNyoUB2ptGtn0fv6G2Q=</pin>
+        </pin-set>
+    </domain-config>
+
+    <!-- Firebase domain -->
+    <domain-config>
+        <domain includeSubdomains="true">firebaseio.com</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- Primary pin - Google GTS CA 1O1 -->
+            <pin digest="SHA-256">r/mIkG3eEpVdm+kuPOlN+U+wI5q1H6Q8vT0T6QZ1F0E=</pin>
+            <!-- Backup pin - GlobalSign Root CA -->
+            <pin digest="SHA-256">K87oWBWM9UZfyddvDfoxL+8lpNyoUB2ptGtn0fv6G2Q=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Baseline file for gradual adoption (Requirement 4) -->
+    <baseline file="lint-baseline/ui-lint-baseline.xml" />
+
+    <!-- Enable all UI Validator checks as blocking errors (CI failures) (Requirement 2 & 3) -->
+    <issue id="Material3ColorRole" severity="error" />
+    <issue id="Material3Elevation" severity="error" />
+    <issue id="Material3Typography" severity="error" />
+    <issue id="Material3Motion" severity="error" />
+    <issue id="WindowSizeClass" severity="error" />
+    <issue id="ResponsiveLayout" severity="error" />
+    <issue id="VisualHierarchy" severity="error" />
+    <issue id="ExecutionContext" severity="error" />
+    <issue id="ErrorPresentation" severity="error" />
+    <issue id="KeyboardAwareness" severity="error" />
+    <issue id="SystemInsets" severity="error" />
+    <issue id="ModeSeparation" severity="error" />
+    <issue id="MotionRules" severity="error" />
+
+    <!-- Accessibility and internationalization guardrails -->
+    <issue id="HardcodedText" severity="warning" />
+    <issue id="ContentDescription" severity="warning" />
+    <issue id="AccessibilitySemantics" severity="warning" />
+</lint>

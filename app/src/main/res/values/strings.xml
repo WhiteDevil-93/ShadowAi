@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ShadowAi</string>
+    <string name="accessibility_service_label">ShadowAi Accessibility Service</string>
+    <string name="accessibility_service_description">Allows ShadowAi to interact with the screen.</string>
+    <string name="input_hint">Ask ShadowAi…</string>
+    <string name="send_button">Send</string>
+
+    <!-- Navigation Drawer -->
+    <string name="nav_chat">Chat</string>
+    <string name="nav_history">History</string>
+    <string name="nav_saved">Saved</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_experts">Custom Experts</string>
+    <string name="nav_open">Open Navigation</string>
+    <string name="nav_close">Close Navigation</string>
+
+    <!-- Model selection -->
+    <string name="model_label">Chat Model</string>
+    <string name="model_hint">Choose chat model</string>
+    <string name="default_model_id">qwen2.5:3b</string>
+
+    <!-- Main tabs -->
+    <string name="label_chat">Chat</string>
+    <string name="label_write">Write</string>
+    <string name="label_call">Call</string>
+    <string name="label_image">Image</string>
+    <string name="label_novita_studio">Novita Studio</string>
+    <string name="label_pixai_studio">PixAI Studio</string>
+
+    <!-- Status strip defaults -->
+    <string name="status_chip_routing_default">Routing: Auto</string>
+    <string name="status_chip_provider_default">Provider: None</string>
+    <string name="status_chip_model_default">Model: Default</string>
+    <string name="status_chip_local_default">Local: Unknown</string>
+    <string name="status_chip_memory_default">Memory: On</string>
+
+    <!-- Common labels -->
+    <string name="label_base_model">Base Model</string>
+    <string name="label_prompt">Prompt</string>
+    <string name="label_negative_prompt">Negative Prompt</string>
+    <string name="label_width">Width</string>
+    <string name="label_height">Height</string>
+    <string name="label_count">Count</string>
+    <string name="label_steps">Steps</string>
+    <string name="label_cfg">CFG</string>
+    <string name="label_cfg_scale">CFG Scale</string>
+    <string name="label_sampler">Sampler</string>
+    <string name="label_sampling_method">Sampling Method</string>
+    <string name="label_seed">Seed</string>
+    <string name="label_clip_skip">Clip Skip</string>
+    <string name="label_response_type">Response Type</string>
+    <string name="label_sd_vae">SD VAE</string>
+    <string name="label_refiner_switch">Refiner Switch</string>
+    <string name="label_batch">Batch</string>
+    <string name="label_loras">LoRAs</string>
+    <string name="label_embeddings">Embeddings</string>
+    <string name="label_detection_level">Detection level</string>
+    <string name="label_results">Results</string>
+
+    <!-- Novita -->
+    <string name="subtitle_novita">Professional Image Generation</string>
+    <string name="hint_embeddings">Add embedding (hit enter)</string>
+    <string name="label_transparent_background">Transparent background</string>
+    <string name="label_restore_faces">Restore faces</string>
+    <string name="label_nsfw_detection">NSFW detection</string>
+    <string name="hint_detection_level">1-100</string>
+    <string name="hint_clip_skip_example">e.g. 1</string>
+    <string name="hint_response_type_example">jpeg</string>
+    <string name="hint_sd_vae_optional">Optional VAE</string>
+    <string name="hint_refiner_switch_example">Switch at step</string>
+    <string name="status_nsfw_unknown">NSFW status unknown</string>
+
+    <!-- PixAI -->
+    <string name="subtitle_pixai">Advanced AI Image Generation</string>
+    <string name="label_vae_model_optional">VAE Model (Optional)</string>
+
+    <!-- Buttons -->
+    <string name="button_change">Change</string>
+    <string name="button_add">+ ADD</string>
+    <string name="button_generate">GENERATE</string>
+    <string name="button_save_image">SAVE IMAGE</string>
+    <string name="button_open_control_center">Open Control Center</string>
+    <string name="button_continue_google">Continue with Google</string>
+    <string name="button_logout">Logout</string>
+    <string name="button_edit">Edit</string>
+    <string name="button_set_keys">Set Keys</string>
+    <string name="button_pixai_utility">PixAI Utility</string>
+    <string name="button_novelai_storyteller">NovelAI Storyteller</string>
+
+    <!-- Right drawer -->
+    <string name="title_system_status">System Status</string>
+    <string name="subtitle_system_status">Routing, providers, and local engine</string>
+    <string name="label_routing">Routing</string>
+    <string name="label_provider">Provider</string>
+    <string name="label_local_engine">Local Engine</string>
+    <string name="label_memory">Memory</string>
+    <string name="label_voice">Voice</string>
+    <string name="title_account">Account</string>
+    <string name="title_default_chat_model">Default Chat Model</string>
+    <string name="desc_default_chat_model">Select the Chat model to use</string>
+    <string name="title_generation_settings">Generation Settings</string>
+    <string name="title_api_keys">API Keys</string>
+    <string name="desc_api_keys">Configure API keys for different AI providers</string>
+    <string name="title_studios">Studios</string>
+    <string name="account_status_not_signed_in">Not signed in</string>
+    <string name="status_auto">Auto</string>
+    <string name="status_none">None</string>
+    <string name="status_unknown">Unknown</string>
+    <string name="status_on">On</string>
+    <string name="status_off">Off</string>
+    <string name="status_ready">Ready</string>
+    <string name="status_unavailable">Unavailable</string>
+    <string name="routing_force_local">Force Local</string>
+    <string name="routing_force_cloud">Force Cloud</string>
+    <string name="chip_routing_format">Routing: %1$s</string>
+    <string name="chip_provider_format">Provider: %1$s</string>
+    <string name="chip_model_format">Model: %1$s</string>
+    <string name="chip_local_format">Local: %1$s</string>
+    <string name="chip_memory_format">Memory: %1$s</string>
+    <string name="label_none_selected">None selected</string>
+    <string name="summary_generation_defaults">Temp / Top-p / Top-k</string>
+
+    <!-- Left drawer -->
+    <string name="menu_shortcuts">Shortcuts</string>
+    <string name="menu_call">Call</string>
+    <string name="menu_sms">SMS</string>
+    <string name="menu_media">Media</string>
+    <string name="menu_status">Status</string>
+    <string name="menu_library">Library</string>
+    <string name="menu_control_center">Control Center</string>
+
+    <!-- Navigation header -->
+    <string name="nav_header_subtitle">Autonomous Android Intelligence</string>
+
+    <!-- Chat item -->
+    <string name="label_ai_avatar">AI</string>
+    <string name="label_ai_name">Shadow</string>
+    <string name="label_ai_response">AI Response</string>
+    <string name="label_metadata_placeholder">Source - Model</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_refine">Refine</string>
+    <string name="action_feedback">Feedback</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_deny">Deny</string>
+    <string name="content_desc_ai_avatar">AI assistant avatar</string>
+
+    <!-- Input bar -->
+    <string name="hint_message_input">Type your message…</string>
+    <string name="content_desc_attach_media">Attach media file</string>
+    <string name="content_desc_voice_input">Voice input - tap to speak</string>
+    <string name="content_desc_send_message">Send message</string>
+    <string name="content_desc_transparent_background">Enable transparent background for generated images</string>
+    <string name="content_desc_restore_faces">Recover/fix faces in generated images</string>
+    <string name="content_desc_nsfw_detection">Enable or disable NSFW filtering</string>
+    <string name="content_desc_open_control_center">Open control center</string>
+    <string name="content_desc_close">Close</string>
+    <string name="content_desc_user_avatar">User avatar</string>
+    <string name="content_desc_toggle_password">Toggle password visibility</string>
+
+    <!-- Admin screen -->
+    <string name="admin_title">Control Center</string>
+    <string name="admin_subtitle">Routing, providers, local models, and safety controls</string>
+    <string name="admin_section_execution_history">Execution History</string>
+    <string name="admin_section_routing_policy">Routing Policy</string>
+    <string name="admin_section_cloud_provider">Cloud Provider</string>
+    <string name="admin_provider_openrouter">OpenRouter</string>
+    <string name="admin_provider_remote_ollama">Remote Ollama</string>
+    <string name="admin_hint_remote_base_url">Remote base URL</string>
+    <string name="admin_button_save_url">Save URL</string>
+    <string name="admin_section_api_key">API Key</string>
+    <string name="admin_hint_cloud_api_key">Cloud API key</string>
+    <string name="admin_button_save_key">Save Key</string>
+    <string name="admin_section_voice">Voice</string>
+    <string name="admin_voice_label">Enable voice responses</string>
+    <string name="admin_voice_toggle_desc">Toggle voice responses on or off</string>
+    <string name="admin_section_memory">Memory</string>
+    <string name="admin_memory_label">Enable long-term memory</string>
+    <string name="admin_memory_toggle_desc">Toggle long-term memory storage on or off</string>
+    <string name="admin_section_model">Model</string>
+    <string name="admin_hint_select_model">Select a model</string>
+    <string name="admin_hint_temperature_range">Temperature (0.0 - 2.0)</string>
+    <string name="admin_hint_top_p_range">Top P (0.0 - 1.0)</string>
+    <string name="admin_hint_top_k_range">Top K (1 - 200)</string>
+    <string name="admin_hint_max_tokens">Max Tokens</string>
+    <string name="admin_hint_repetition_penalty_range">Repetition Penalty (0.5 - 2.0)</string>
+    <string name="admin_hint_presence_penalty_range">Presence Penalty (-2.0 - 2.0)</string>
+    <string name="admin_switch_mirostat">Enable Mirostat</string>
+    <string name="admin_mirostat_toggle_desc">Enable or disable Mirostat sampling</string>
+    <string name="admin_hint_mirostat_tau">Mirostat Tau</string>
+    <string name="admin_hint_mirostat_eta">Mirostat Eta</string>
+    <string name="admin_switch_content_filters">Enable Content Filters</string>
+    <string name="admin_content_filters_desc">Enable or disable AI content filtering</string>
+    <string name="admin_filter_hate">Filter hate</string>
+    <string name="admin_filter_violence">Filter violence</string>
+    <string name="admin_filter_adult">Filter adult</string>
+    <string name="admin_filter_self_harm">Filter self-harm</string>
+    <string name="admin_hint_blocklist">Blocklist (one per line)</string>
+    <string name="admin_hint_allowlist">Allowlist (one per line)</string>
+    <string name="admin_button_save_generation">Save Generation Settings</string>
+    <string name="admin_section_sd_local">Stable Diffusion (Local)</string>
+    <string name="admin_desc_sd_local">Based on PixAI: manage your local checkpoint, defaults, and sampler parameters.</string>
+    <string name="admin_hint_sd_path">Checkpoint / safetensors path</string>
+    <string name="admin_hint_sd_path_example">/storage/emulated/0/AI/models/model.safetensors</string>
+    <string name="admin_hint_sd_negative_prompt">Default negative prompt</string>
+    <string name="admin_hint_sd_width">Width</string>
+    <string name="admin_hint_sd_width_value">768</string>
+    <string name="admin_hint_sd_height">Height</string>
+    <string name="admin_hint_sd_height_value">1024</string>
+    <string name="admin_hint_sd_sampling_steps">Sampling steps</string>
+    <string name="admin_hint_sd_sampling_steps_value">28</string>
+    <string name="admin_hint_sd_cfg_scale">CFG scale</string>
+    <string name="admin_hint_sd_cfg_scale_value">7.5</string>
+    <string name="admin_hint_sd_seed">Seed (-1 for random)</string>
+    <string name="admin_hint_sd_seed_value">-1</string>
+    <string name="admin_button_save_sd">Save SD Settings</string>
+    <string name="admin_section_local_text_model">Local Text Model</string>
+    <string name="admin_hint_local_text_path">Path to local text model file</string>
+    <string name="admin_button_save_local_text">Save Local Text Model</string>
+    <string name="admin_selected_none">Selected: none</string>
+    <string name="admin_button_import_model">Import Model</string>
+    <string name="admin_button_scan_storage">Scan Local Storage</string>
+    <string name="admin_label_discovered_models">Discovered Models</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_novita_model_title">Select model…</string>
+    <string name="dialog_novita_base_model_label">Base Model:</string>
+    <string name="dialog_novita_filter_all">All</string>
+    <string name="dialog_novita_filter_sd15">SD 1.5</string>
+    <string name="dialog_novita_filter_sdxl">SDXL 1.0</string>
+    <string name="dialog_provider_settings_title">AI Provider Settings</string>
+    <string name="dialog_provider_settings_subtitle">Configure your AI providers by adding their API keys.</string>
+    <string name="provider_wizard_test_ready">Ready to test connection</string>
+    <string name="provider_wizard_test_button">Test Connection</string>
+    <string name="action_close">Close</string>
+    <string name="provider_wizard_api_key_hint">API Key</string>
+    <string name="provider_wizard_show_advanced">Show Advanced Settings</string>
+    <string name="provider_wizard_base_url_optional">Base URL (Optional)</string>
+    <string name="provider_wizard_select_model">Select Model</string>
+    <string name="provider_wizard_temp_hint">Temperature (0.0 - 1.0)</string>
+    <string name="provider_wizard_max_tokens_hint">Max Tokens</string>
+    <string name="provider_wizard_default_temp">0.7</string>
+    <string name="provider_wizard_default_max_tokens">4096</string>
+    <string name="provider_wizard_select_provider">Select AI Provider</string>
+
+    <!-- Provider settings rows -->
+    <string name="provider_item_name">Provider Name</string>
+    <string name="provider_item_get_key">Get Key</string>
+    <string name="provider_item_add_model">Add Model</string>
+    <string name="provider_item_model_label">Model</string>
+    <string name="provider_item_add_model_desc">Add the currently selected model to model list. After adding, please check the Model Tab.</string>
+    <string name="provider_item_add">Add</string>
+    <string name="provider_item_api_key_hint">Enter API Key</string>
+
+    <!-- Chat placeholders -->
+    <string name="placeholder_time">12:45</string>
+    <string name="placeholder_separator"> - </string>
+    <string name="placeholder_user_message">User Message</string>
+    <string name="label_user_avatar">U</string>
+
+    <!-- Novita defaults -->
+    <string name="novita_default_model">sdxl_lightning.safetensors</string>
+    <string name="novita_default_width">1024</string>
+    <string name="novita_default_height">1024</string>
+    <string name="novita_default_count">1</string>
+    <string name="novita_default_steps">20</string>
+    <string name="novita_default_cfg">7.0</string>
+    <string name="novita_default_sampler">Euler a</string>
+
+    <!-- PixAI defaults -->
+    <string name="pixai_default_width">512</string>
+    <string name="pixai_default_height">768</string>
+    <string name="pixai_default_batch">1</string>
+    <string name="pixai_default_steps">28</string>
+    <string name="pixai_default_cfg">7.5</string>
+    <string name="pixai_default_sampler">Euler a</string>
+
+    <!-- Item placeholders -->
+    <string name="placeholder_lora_name">LoRA Name</string>
+    <string name="placeholder_lora_strength">1.0</string>
+    <string name="label_checkpoint">Checkpoint</string>
+    <string name="placeholder_model_name">model_name</string>
+    <string name="placeholder_model_filename">anythingv5.safetensors</string>
+    <string name="placeholder_suggestion">Suggestion</string>
+    <string name="placeholder_local_model_name">Model Name</string>
+    <string name="placeholder_local_model_format">GGUF</string>
+    <string name="placeholder_local_model_size">0 MB</string>
+    <string name="placeholder_local_model_path">/path/to/model.gguf</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_load">Load</string>
+    <string name="label_base_url">Base URL</string>
+    <string name="label_capabilities">Capabilities</string>
+    <string name="action_configure">Configure</string>
+
+    <!-- Sheets -->
+    <string name="sheet_hint_temperature">Temperature</string>
+    <string name="sheet_hint_top_p">Top-p</string>
+    <string name="sheet_hint_top_k">Top-k</string>
+    <string name="sheet_hint_max_tokens">Max Tokens</string>
+    <string name="sheet_hint_repetition_penalty">Repetition Penalty</string>
+    <string name="sheet_hint_presence_penalty">Presence Penalty</string>
+    <string name="sheet_enable_content_filter">Enable Content Filter</string>
+    <string name="sheet_label_engine">Engine</string>
+    <string name="sheet_label_model">Model</string>
+    <string name="sheet_label_lora_ids">LoRA IDs (one per line, optional id:weight)</string>
+    <string name="sheet_label_vae_model_id">VAE Model ID</string>
+    <string name="sheet_label_sampling_steps">Sampling Steps</string>
+    <string name="sheet_label_seed_optional">Seed (optional)</string>
+    <string name="sheet_label_size">Size (width x height)</string>
+    <string name="sheet_label_batch_size">Batch Size</string>
+    <string name="sheet_separator_x"> x </string>
+    <string name="sheet_hint_custom_model_id">Custom model ID (optional)</string>
+    <string name="sheet_hint_size_512">512</string>
+    <string name="sheet_hint_base_url_no_v1">Base URL (no /v1)</string>
+    <string name="sheet_hint_api_key">API Key</string>
+    <string name="sheet_hint_models_one_per_line">Models (one per line)</string>
+    <string name="sheet_provider_oauth_notice">OAuth and capability sync require backend support.</string>
+
+    <!-- Admin toasts and dialogs -->
+    <string name="admin_toast_api_key_saved">API Key Saved</string>
+    <string name="admin_toast_custom_url_saved">Custom URL Saved</string>
+    <string name="admin_toast_generation_saved">Generation settings saved</string>
+    <string name="admin_toast_model_set">Model set to %1$s</string>
+    <string name="admin_toast_sd_path_saved">Stable Diffusion model path saved</string>
+    <string name="admin_selected_format">Selected: %1$s</string>
+    <string name="admin_no_models_found">No models found. Make sure files exist in Downloads/Documents.</string>
+    <string name="admin_model_format_gguf">GGUF</string>
+    <string name="admin_model_format_onnx">ONNX</string>
+    <string name="admin_model_format_safetensors">SafeTensors</string>
+    <string name="admin_model_format_bin">BIN</string>
+    <string name="admin_model_format_json">JSON</string>
+    <string name="admin_model_format_unknown">Unknown</string>
+    <string name="status_selected">Selected</string>
+    <string name="admin_toast_local_model_loaded">Local model loaded: %1$s</string>
+    <string name="admin_toast_model_deleted">Model deleted: %1$s</string>
+    <string name="admin_toast_model_delete_failed">Failed to delete model</string>
+    <string name="admin_toast_local_text_path_saved">Local text model path saved</string>
+    <plurals name="admin_toast_models_found">
+        <item quantity="one">Found %1$d model</item>
+        <item quantity="other">Found %1$d models</item>
+    </plurals>
+    <string name="admin_dialog_delete_model_title">Delete Model</string>
+    <string name="admin_dialog_delete_model_message">Are you sure you want to delete %1$s?</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="admin_toast_select_gguf">Please select a .gguf file</string>
+    <string name="admin_toast_failed_open_file">Failed to open file</string>
+    <string name="admin_toast_importing_model">Importing model…</string>
+    <string name="admin_toast_imported_model">Imported: %1$s</string>
+    <string name="admin_toast_import_failed">Import failed: %1$s</string>
+    <string name="admin_toast_import_error">Error: %1$s</string>
+    <string name="admin_file_size_bytes_format">%1$d B</string>
+    <string name="admin_file_size_kb_format">%1$d KB</string>
+    <string name="admin_file_size_mb_format">%1$d MB</string>
+    <string name="admin_file_size_gb_format">%1$d GB</string>
+    <string name="admin_history_empty">No tasks executed yet.</string>
+    <string name="admin_history_id_format">ID: %1$s</string>
+    <string name="admin_history_type_format">Type: %1$s</string>
+    <string name="admin_history_input_format">Input: %1$s</string>
+    <string name="admin_history_result_format">Result: %1$s</string>
+    <string name="admin_history_failed_format">Failed: %1$s</string>
+    <string name="admin_history_state_format">State: %1$s</string>
+    <string name="admin_history_separator">----------------</string>
+
+    <!-- Provider settings dialog -->
+    <string name="provider_settings_get_key_format">Get %1$s Key</string>
+    <string name="provider_settings_pick_model_first">Please pick a model first</string>
+    <string name="provider_settings_added_model">Added %1$s to %2$s</string>
+    <string name="provider_settings_model_already_added">%1$s already in list</string>
+    <string name="provider_settings_saved_models">Saved models: %1$s</string>
+    <string name="provider_settings_select_model">Select Model</string>
+
+    <!-- Provider setup wizard -->
+    <string name="wizard_title_welcome">Welcome to Provider Setup</string>
+    <string name="wizard_desc_select_provider">Select an AI provider to configure</string>
+    <string name="wizard_title_api_config">API Configuration</string>
+    <string name="wizard_desc_api_config">Enter your API credentials</string>
+    <string name="wizard_title_model_selection">Model Selection</string>
+    <string name="wizard_desc_model_selection">Choose your preferred model and settings</string>
+    <string name="wizard_title_test_connection">Test Connection</string>
+    <string name="wizard_desc_test_connection">Verify your configuration works</string>
+    <string name="wizard_button_next">Next</string>
+    <string name="wizard_button_back">Back</string>
+    <string name="wizard_button_done">Done</string>
+    <string name="wizard_title_setup_complete">Setup Complete</string>
+    <string name="wizard_message_setup_complete">Your provider has been configured successfully!</string>
+    <string name="wizard_title_testing_connection">Testing Connection</string>
+    <string name="wizard_message_testing_connection">Please wait…</string>
+    <string name="wizard_title_success">Success</string>
+    <string name="wizard_message_connection_passed">Connection test passed! Your provider is ready to use.</string>
+    <string name="wizard_title_connection_failed">Connection Failed</string>
+    <string name="wizard_message_connection_failed">Could not connect to the provider. Please check your credentials.</string>
+    <string name="wizard_button_retry">Retry</string>
+    <string name="wizard_button_ok">OK</string>
+    <string name="wizard_step_title_format">%1$s (Step %2$d/%3$d)</string>
+    <string name="provider_name_openai">OpenAI</string>
+    <string name="provider_name_anthropic">Anthropic</string>
+    <string name="provider_name_gemini">Google Gemini</string>
+    <string name="provider_name_groq">Groq</string>
+    <string name="provider_name_deepseek">DeepSeek</string>
+    <string name="provider_name_openrouter">OpenRouter</string>
+
+    <!-- Provider setup wizard additional strings for i18n -->
+    <string name="wizard_label_select_provider">Select Provider:</string>
+    <string name="wizard_hint_choose_provider">Choose a provider</string>
+    <string name="wizard_label_api_key">API Key:</string>
+    <string name="wizard_hint_enter_api_key">Enter your API key</string>
+    <string name="wizard_label_base_url">Base URL (optional):</string>
+    <string name="wizard_hint_base_url_example">https://api.example.com/v1</string>
+    <string name="wizard_checkbox_show_advanced">Show Advanced Settings</string>
+    <string name="wizard_label_select_model">Select Model:</string>
+    <string name="wizard_hint_choose_model">Choose a model</string>
+    <string name="wizard_button_test_connection">Test Connection</string>
+
+    <!-- Google Sign-In -->
+    <string name="default_web_client_id">982173809781-abcdefghijklmnopqrstuvwx1234567890.apps.googleusercontent.com</string>
+    <string name="inference_service_description">Isolated AI inference service running llama.cpp in separate process for memory safety and crash isolation</string>
+
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_in_failed">Sign in failed. Please try again.</string>
+    <string name="sign_in_required">Please sign in to continue</string>
+
+    <string-array name="model_options">
+        <item>ShadowAi Cloud</item>
+        <item>ShadowAi On-Device</item>
+        <item>AtlasCloud</item>
+        <item>Novita</item>
+        <item>Siray</item>
+        <item>PixAI</item>
+        <item>NovelAI</item>
+        <item>Qwen2.5 3B</item>
+        <item>Llama3</item>
+        <item>GPT-4o</item>
+        <item>Gemini Ultra</item>
+    </string-array>
+</resources>

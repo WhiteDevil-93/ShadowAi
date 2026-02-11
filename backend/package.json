@@ -1,0 +1,30 @@
+{
+  "name": "shadowai-backend",
+  "version": "1.0.0",
+  "description": "Backend services for ShadowAI with Genkit AI orchestration",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@genkit-ai/googleai": "^0.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "genkit": "^0.5.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "ai",
+    "genkit",
+    "shadowai",
+    "backend"
+  ],
+  "author": "ShadowAI Team",
+  "license": "MIT"
+}

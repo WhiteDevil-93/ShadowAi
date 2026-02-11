@@ -1,0 +1,63 @@
+# ShadowAi
+
+Local AI inference Android application with multi-provider support.
+
+## Setup
+
+### Prerequisites
+- Android Studio Hedgehog or newer
+- JDK 17
+- Android SDK 36
+
+### Pre-commit Hooks
+
+This project uses pre-commit hooks for code quality:
+
+```bash
+# Install pre-commit (if not already installed)
+pip install pre-commit
+
+# Install hooks in the repository
+pre-commit install
+
+# Run manually on all files
+pre-commit run --all-files
+```
+
+Hooks include:
+- ktlint (Kotlin code formatting)
+- EOF fixer
+- Trailing whitespace removal
+
+### Building
+
+```bash
+./gradlew :app:assembleDebug
+```
+
+### Project Structure
+
+- `app/` - Main Android application
+- `backend/` - Ktor server for image generation APIs
+- `core-contracts/` - Shared interfaces and data classes
+- `provider-adapters/` - AI provider implementations (OpenAI, Anthropic, local)
+- `artifact-system/` - Media/file handling
+- `ui-params/`, `ui-composition/` - UI components and design system
+- `diagnostics/` - Debug and logging tools
+- `hot-swapping/` - Dynamic model/provider switching
+- `pipeline-planner/` - Request routing and orchestration
+- `model-catalog/` - Model definitions and metadata
+- `ui-validator/` - Custom lint rules
+
+## CI/CD
+
+GitHub Actions workflow included for:
+- Build verification
+- ktlint checks
+- Android lint
+- Unit tests
+- OWASP dependency vulnerability scan
+
+## License
+
+MIT
