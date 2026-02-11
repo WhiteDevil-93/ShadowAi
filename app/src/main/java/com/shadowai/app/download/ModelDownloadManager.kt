@@ -1,6 +1,5 @@
 package com.shadowai.app.download
 
-import android.content.Context
 import android.util.Log
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
@@ -9,8 +8,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.shadowai.app.ai.ModelDownloader
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -46,9 +43,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class ModelDownloadManager @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val workManager: WorkManager,
-    private val modelDownloader: ModelDownloader
+    private val workManager: WorkManager
 ) {
 
     companion object {

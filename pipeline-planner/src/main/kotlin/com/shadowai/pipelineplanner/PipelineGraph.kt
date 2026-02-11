@@ -38,7 +38,9 @@ class PipelineGraph @Inject constructor() {
         priorityQueue.add(QueueNode(source, 0.0))
 
         while (priorityQueue.isNotEmpty()) {
-            val (currentModality, currentDistance) = priorityQueue.poll()
+            val currentNode = priorityQueue.poll() ?: continue
+            val currentModality = currentNode.modality
+            val currentDistance = currentNode.distance
 
             if (currentDistance > (distances[currentModality] ?: Double.POSITIVE_INFINITY)) {
                 continue
