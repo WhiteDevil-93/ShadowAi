@@ -225,6 +225,7 @@ dependencies {
 
     // Hilt Navigation Compose
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
 
     // Document access (SAF)
     implementation(libs.androidx.documentfile)
@@ -242,6 +243,7 @@ dependencies {
     // Hilt - Migrated to KSP
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    ksp(libs.androidx.hilt.compiler)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)

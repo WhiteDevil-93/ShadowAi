@@ -28,8 +28,8 @@ import dagger.assisted.AssistedInject
 class ModelDownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted params: WorkerParameters,
-    private val modelDownloaderProvider: () -> ModelDownloader,
-    private val notificationManager: DownloadNotificationManager?
+    private val modelDownloader: ModelDownloader,
+    private val notificationManager: DownloadNotificationManager
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -46,8 +46,6 @@ class ModelDownloadWorker @AssistedInject constructor(
         const val SPEED_BYTES_PER_SECOND = "speed_bytes_per_second"
         const val FILE_NAME = "file_name"
     }
-
-    private val modelDownloader: ModelDownloader by lazy { modelDownloaderProvider() }
 
     override suspend fun doWork(): Result {
         val modelUrl = inputData.getString(KEY_MODEL_URL)
@@ -66,7 +64,7 @@ class ModelDownloadWorker @AssistedInject constructor(
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Download failed: ${e.message}", e)
-            notificationManager?.showDownloadFailure(downloadId, destination, e.message)
+            notificationManager.showDownloadFailure(downloadId, destination, e.message)
 
             if (runAttemptCount < MAX_RETRIES) {
                 Log.i(TAG, "Scheduling retry $(${runAttemptCount + 1}/$MAX_RETRIES)")
@@ -77,7 +75,7 @@ class ModelDownloadWorker @AssistedInject constructor(
             }
         } finally {
             // Clean up notification
-            notificationManager?.cancelNotification(downloadId)
+            notificationManager.cancelNotification(downloadId)
         }
     }
 
@@ -101,7 +99,7 @@ class ModelDownloadWorker @AssistedInject constructor(
             setProgress(progressData)
 
             // Show progress notification
-            notificationManager?.showDownloadProgress(
+            notificationManager.showDownloadProgress(
                 downloadId = downloadId,
                 fileName = progress.fileName,
                 progress = progress.progressPercentInt,
@@ -112,7 +110,7 @@ class ModelDownloadWorker @AssistedInject constructor(
 
             if (progress.isComplete) {
                 Log.i(TAG, "Download complete: ${progress.fileName} (${progress.bytesDownloaded} bytes)")
-                notificationManager?.showDownloadSuccess(downloadId, progress.fileName, progress.bytesDownloaded)
+                notificationManager.showDownloadSuccess(downloadId, progress.fileName, progress.bytesDownloaded)
             }
         }
     }
