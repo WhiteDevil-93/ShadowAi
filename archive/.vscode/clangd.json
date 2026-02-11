@@ -1,0 +1,22 @@
+{
+  "index": {
+    "background": false
+  },
+  "completion": {
+    "enabled": false
+  },
+  "diagnostics": {
+    "suppress": [
+      "'jni.h' file not found",
+      "Unknown type name 'llama_model'",
+      "Unknown type name 'llama_context'",
+      "Unknown type name 'JavaVM'",
+      "Unknown type name 'JNIEnv'",
+      "Unknown type name 'jstring'",
+      "Unknown type name 'llama_token'",
+      "Unknown type name 'JNIEXPORT'",
+      "Use of undeclared identifier 'llama_backend_init'",
+      "Too many errors emitted"
+    ]
+  }
+}

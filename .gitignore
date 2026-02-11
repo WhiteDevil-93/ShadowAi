@@ -45,6 +45,14 @@ node_modules/
 .tmp/
 *.log
 firebase-debug.log
+build_error.log
+build_log*.txt
+compile_*.log
+app_compile_*.log
+app_assemble_latest.log
+kapt_*.log
+ksp_*.log
+git-error-*
 
 # Large binaries that should use Gradle plugin instead
 ktlint.jar

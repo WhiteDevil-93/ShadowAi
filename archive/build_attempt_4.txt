@@ -1,0 +1,143 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :artifact-system:preBuild UP-TO-DATE
+> Task :artifact-system:preDebugBuild UP-TO-DATE
+> Task :artifact-system:writeDebugAarMetadata UP-TO-DATE
+> Task :core-contracts:preBuild UP-TO-DATE
+> Task :core-contracts:preDebugBuild UP-TO-DATE
+> Task :core-contracts:writeDebugAarMetadata UP-TO-DATE
+> Task :diagnostics:preBuild UP-TO-DATE
+> Task :diagnostics:preDebugBuild UP-TO-DATE
+> Task :diagnostics:writeDebugAarMetadata UP-TO-DATE
+> Task :hot-swapping:preBuild UP-TO-DATE
+> Task :hot-swapping:preDebugBuild UP-TO-DATE
+> Task :hot-swapping:writeDebugAarMetadata UP-TO-DATE
+> Task :model-catalog:preBuild UP-TO-DATE
+> Task :model-catalog:preDebugBuild UP-TO-DATE
+> Task :model-catalog:writeDebugAarMetadata UP-TO-DATE
+> Task :pipeline-planner:preBuild UP-TO-DATE
+> Task :pipeline-planner:preDebugBuild UP-TO-DATE
+> Task :pipeline-planner:writeDebugAarMetadata UP-TO-DATE
+> Task :provider-adapters:preBuild UP-TO-DATE
+> Task :provider-adapters:preDebugBuild UP-TO-DATE
+> Task :provider-adapters:writeDebugAarMetadata UP-TO-DATE
+> Task :ui-composition:preBuild UP-TO-DATE
+> Task :ui-composition:preDebugBuild UP-TO-DATE
+> Task :ui-composition:writeDebugAarMetadata UP-TO-DATE
+> Task :ui-params:preBuild UP-TO-DATE
+> Task :ui-params:preDebugBuild UP-TO-DATE
+> Task :ui-params:writeDebugAarMetadata UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :artifact-system:processDebugNavigationResources UP-TO-DATE
+> Task :core-contracts:processDebugNavigationResources UP-TO-DATE
+> Task :diagnostics:processDebugNavigationResources UP-TO-DATE
+> Task :hot-swapping:processDebugNavigationResources UP-TO-DATE
+> Task :model-catalog:processDebugNavigationResources UP-TO-DATE
+> Task :pipeline-planner:processDebugNavigationResources UP-TO-DATE
+> Task :provider-adapters:processDebugNavigationResources UP-TO-DATE
+> Task :ui-composition:processDebugNavigationResources UP-TO-DATE
+> Task :ui-params:processDebugNavigationResources UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :artifact-system:generateDebugResValues UP-TO-DATE
+> Task :artifact-system:generateDebugResources UP-TO-DATE
+> Task :artifact-system:packageDebugResources UP-TO-DATE
+> Task :core-contracts:generateDebugResValues UP-TO-DATE
+> Task :core-contracts:generateDebugResources UP-TO-DATE
+> Task :core-contracts:packageDebugResources UP-TO-DATE
+> Task :diagnostics:generateDebugResValues UP-TO-DATE
+> Task :diagnostics:generateDebugResources UP-TO-DATE
+> Task :diagnostics:packageDebugResources UP-TO-DATE
+> Task :hot-swapping:generateDebugResValues UP-TO-DATE
+> Task :hot-swapping:generateDebugResources UP-TO-DATE
+> Task :hot-swapping:packageDebugResources UP-TO-DATE
+> Task :model-catalog:generateDebugResValues UP-TO-DATE
+> Task :model-catalog:generateDebugResources UP-TO-DATE
+> Task :model-catalog:packageDebugResources UP-TO-DATE
+> Task :pipeline-planner:generateDebugResValues UP-TO-DATE
+> Task :pipeline-planner:generateDebugResources UP-TO-DATE
+> Task :pipeline-planner:packageDebugResources UP-TO-DATE
+> Task :provider-adapters:generateDebugResValues UP-TO-DATE
+> Task :provider-adapters:generateDebugResources UP-TO-DATE
+> Task :provider-adapters:packageDebugResources UP-TO-DATE
+> Task :ui-composition:generateDebugResValues UP-TO-DATE
+> Task :ui-composition:generateDebugResources UP-TO-DATE
+> Task :ui-composition:packageDebugResources UP-TO-DATE
+> Task :ui-params:generateDebugResValues UP-TO-DATE
+> Task :ui-params:generateDebugResources UP-TO-DATE
+> Task :ui-params:packageDebugResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :artifact-system:extractDeepLinksDebug UP-TO-DATE
+> Task :artifact-system:processDebugManifest UP-TO-DATE
+> Task :core-contracts:extractDeepLinksDebug UP-TO-DATE
+> Task :core-contracts:processDebugManifest UP-TO-DATE
+> Task :diagnostics:extractDeepLinksDebug UP-TO-DATE
+> Task :diagnostics:processDebugManifest UP-TO-DATE
+> Task :hot-swapping:extractDeepLinksDebug UP-TO-DATE
+> Task :hot-swapping:processDebugManifest UP-TO-DATE
+> Task :model-catalog:extractDeepLinksDebug UP-TO-DATE
+> Task :model-catalog:processDebugManifest UP-TO-DATE
+> Task :pipeline-planner:extractDeepLinksDebug UP-TO-DATE
+> Task :pipeline-planner:processDebugManifest UP-TO-DATE
+> Task :provider-adapters:extractDeepLinksDebug UP-TO-DATE
+> Task :provider-adapters:processDebugManifest UP-TO-DATE
+> Task :ui-composition:extractDeepLinksDebug UP-TO-DATE
+> Task :ui-composition:processDebugManifest UP-TO-DATE
+> Task :ui-params:extractDeepLinksDebug UP-TO-DATE
+> Task :ui-params:processDebugManifest UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :artifact-system:compileDebugLibraryResources UP-TO-DATE
+> Task :artifact-system:parseDebugLocalResources UP-TO-DATE
+> Task :artifact-system:generateDebugRFile UP-TO-DATE
+> Task :core-contracts:compileDebugLibraryResources UP-TO-DATE
+> Task :core-contracts:parseDebugLocalResources UP-TO-DATE
+> Task :core-contracts:generateDebugRFile UP-TO-DATE
+> Task :diagnostics:compileDebugLibraryResources UP-TO-DATE
+> Task :diagnostics:parseDebugLocalResources UP-TO-DATE
+> Task :diagnostics:generateDebugRFile UP-TO-DATE
+> Task :hot-swapping:compileDebugLibraryResources UP-TO-DATE
+> Task :hot-swapping:parseDebugLocalResources UP-TO-DATE
+> Task :hot-swapping:generateDebugRFile UP-TO-DATE
+> Task :model-catalog:compileDebugLibraryResources UP-TO-DATE
+> Task :model-catalog:parseDebugLocalResources UP-TO-DATE
+> Task :model-catalog:generateDebugRFile UP-TO-DATE
+> Task :pipeline-planner:compileDebugLibraryResources UP-TO-DATE
+> Task :pipeline-planner:parseDebugLocalResources UP-TO-DATE
+> Task :pipeline-planner:generateDebugRFile UP-TO-DATE
+> Task :provider-adapters:compileDebugLibraryResources UP-TO-DATE
+> Task :provider-adapters:parseDebugLocalResources UP-TO-DATE
+> Task :provider-adapters:generateDebugRFile UP-TO-DATE
+> Task :ui-composition:compileDebugLibraryResources UP-TO-DATE
+> Task :ui-composition:parseDebugLocalResources UP-TO-DATE
+> Task :ui-composition:generateDebugRFile UP-TO-DATE
+> Task :ui-params:compileDebugLibraryResources UP-TO-DATE
+> Task :ui-params:parseDebugLocalResources UP-TO-DATE
+> Task :ui-params:generateDebugRFile UP-TO-DATE
+> Task :app:processDebugResources FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:processDebugResources'.
+> Failed to clean up output files for task ':app:processDebugResources'
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 14s
+107 actionable tasks: 2 executed, 105 up-to-date

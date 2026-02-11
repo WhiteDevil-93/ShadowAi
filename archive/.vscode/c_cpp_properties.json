@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Android",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${env:ANDROID_NDK_HOME}/**"
+            ],
+            "defines": [],
+            "compilerPath": "clang",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64",
+            "compileCommands": [
+                "${workspaceFolder}/app/src/main/cpp/compile_commands.json"
+            ]
+        }
+    ],
+    "version": 4
+}

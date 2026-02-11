@@ -1,0 +1,145 @@
+name: UI Linting CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'app/src/main/java/**/*.kt'
+      - 'app/src/main/java/**/*.java'
+      - 'ui-*/src/main/**/*.kt'
+      - 'lint.xml'
+      - '.github/workflows/ui-lint-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'app/src/main/java/**/*.kt'
+      - 'app/src/main/java/**/*.java'
+      - 'ui-*/src/main/**/*.kt'
+      - 'lint.xml'
+      - '.github/workflows/ui-lint-ci.yml'
+
+jobs:
+  ui-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Create baseline directory
+        run: mkdir -p lint-baseline
+
+      - name: Run UI Lint with custom reporter
+        run: |
+          START_TIME=$(date +%s%3N)
+          ./gradlew lintDebug --continue \
+            -Pandroid.lint.baseline=lint-baseline/ui-lint-baseline.xml \
+            -Pandroid.lint.reporter=UiLintReporter \
+            -Pandroid.lint.reporter.output=lint-results/ui-lint-report.json \
+            -Pandroid.lint.reporter.format=json \
+            || echo "Lint completed with issues"
+          END_TIME=$(date +%s%3N)
+          EXECUTION_TIME=$((END_TIME - START_TIME))
+          echo "Lint execution time: ${EXECUTION_TIME}ms" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload lint results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-lint-results
+          path: |
+            lint-results/
+            lint-baseline/
+
+      - name: Generate compliance report
+        run: |
+          ./gradlew :ui-validator:generateComplianceReport \
+            -Plint.results.dir=lint-results \
+            -Plint.baseline.dir=lint-baseline
+
+      - name: Comment PR with lint summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            try {
+              const reportPath = 'lint-results/ui-lint-report.json';
+              if (fs.existsSync(reportPath)) {
+                const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                const summary = generateLintSummary(report);
+
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: summary
+                });
+              }
+            } catch (error) {
+              console.log('No lint report found or error parsing:', error.message);
+            }
+
+            function generateLintSummary(report) {
+              let summary = '## UI Linting Results\n\n';
+
+              if (report.issues && report.issues.length > 0) {
+                const errors = report.issues.filter(i => i.severity === 'ERROR').length;
+                const warnings = report.issues.filter(i => i.severity === 'WARNING').length;
+
+                summary += `🚨 **Errors:** ${errors}\n`;
+                summary += `⚠️ **Warnings:** ${warnings}\n\n`;
+
+                if (errors > 0) {
+                  summary += '### Blocking Issues (Must Fix):\n';
+                  report.issues.filter(i => i.severity === 'ERROR').slice(0, 5).forEach(issue => {
+                    summary += `- **${issue.id}**: ${issue.message} in \`${issue.file}\`\n`;
+                  });
+                  if (report.issues.filter(i => i.severity === 'ERROR').length > 5) {
+                    summary += `- ... and ${report.issues.filter(i => i.severity === 'ERROR').length - 5} more errors\n`;
+                  }
+                }
+
+                if (warnings > 0) {
+                  summary += '\n### Warnings (Consider Fixing):\n';
+                  report.issues.filter(i => i.severity === 'WARNING').slice(0, 3).forEach(issue => {
+                    summary += `- **${issue.id}**: ${issue.message} in \`${issue.file}\`\n`;
+                  });
+                }
+              } else {
+                summary += '✅ **No UI linting issues found!**\n';
+              }
+
+              summary += '\n📊 [View detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})';
+
+              return summary;
+            }
+
+      - name: Fail on blocking issues
+        if: always()
+        run: |
+          if [ -f lint-results/ui-lint-report.json ]; then
+            ERRORS=$(jq '.issues | map(select(.severity == "ERROR")) | length' lint-results/ui-lint-report.json)
+            if [ "$ERRORS" -gt 0 ]; then
+              echo "❌ Found $ERRORS blocking UI linting errors. Please fix them before merging."
+              exit 1
+            fi
+          fi

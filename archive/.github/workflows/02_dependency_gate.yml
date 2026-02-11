@@ -1,0 +1,49 @@
+name: Dependency Gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Check Version Catalog
+        run: |
+          if [ -f gradle/libs.versions.toml ]; then
+            echo "Version catalog exists."
+          else
+            echo "Version catalog missing!"
+            exit 1
+          fi
+
+      - name: Check for Dynamic Versions
+        run: |
+          if grep -q "+" gradle/libs.versions.toml; then
+             echo "Dynamic versions found in catalog!"
+             exit 1
+          else
+             echo "No dynamic versions in catalog."
+          fi
+
+      - name: Validate Dependency Locking
+        run: |
+             # Verify that lock files are generated or build succeeds with locking enabled
+             ./gradlew dependencies --dry-run
+
+      - name: Upload Lockfiles
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-locks
+          path: |
+            **/gradle.lockfile
+            gradle/dependency-locks/

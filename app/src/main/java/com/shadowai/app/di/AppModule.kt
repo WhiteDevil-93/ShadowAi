@@ -3,6 +3,7 @@ package com.shadowai.app.di
 import android.content.Context
 import com.google.gson.Gson
 import com.shadowai.app.ai.*
+import com.shadowai.app.network.CertificatePinningInterceptor
 import com.shadowai.app.db.FailureDao
 import com.shadowai.app.db.FeedbackDao
 import com.shadowai.app.db.LedgerDao
@@ -12,6 +13,8 @@ import com.shadowai.app.db.ShadowDatabase
 import com.shadowai.app.db.TaskDao
 import com.shadowai.app.security.AccessControlManager
 import com.shadowai.app.security.BiometricKeyManager
+import com.shadowai.app.security.CertificatePinningConfig
+import com.shadowai.app.security.CertificateErrorHandler
 import com.shadowai.app.security.SecurityManager
 import com.shadowai.core.LocalInferenceEngine
 import com.shadowai.core.security.PiiMaskingProcessor
@@ -71,11 +74,22 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(
+        certificateErrorHandler: CertificateErrorHandler
+    ): OkHttpClient {
+        // Create interceptor that will handle certificate pinning failures
+        val pinningInterceptor = CertificatePinningInterceptor(
+            onError = { exception ->
+                certificateErrorHandler.handleCertificatePinningError(exception)
+            }
+        )
+
         return OkHttpClient.Builder()
             .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
             .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
             .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .certificatePinner(CertificatePinningConfig.createPinner())
+            .addInterceptor(pinningInterceptor)
             .build()
     }
 
@@ -94,6 +108,12 @@ object AppModule {
     fun provideAccessControlManager(
         securityManager: SecurityManager
     ): AccessControlManager = AccessControlManager(securityManager)
+
+    @Provides
+    @Singleton
+    fun provideCertificateErrorHandler(
+        @ApplicationContext context: Context
+    ): CertificateErrorHandler = CertificateErrorHandler(context)
 
     @Provides
     @Singleton

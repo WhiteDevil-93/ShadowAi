@@ -1,0 +1,14 @@
+name: Tests Gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Skip Tests
+        run: echo "No tests to run yet."

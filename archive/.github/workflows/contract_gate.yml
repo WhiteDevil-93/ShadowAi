@@ -1,0 +1,22 @@
+name: Contract Alignment Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  contract-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify contract documents exist
+        run: |
+          test -f docs/ASSISTANT_CONTRACT_SCOPE.md
+          test -f docs/COMPATIBILITY_MATRIX.md
+          test -f docs/ASSISTANT_FUNCTION_SET.md
+          test -f docs/MASTER_SPECIFICATION.md
+
+      - name: Block scope-restricting language
+        run: |
+          ! grep -r "[t]oy\|demo only\|minimal assistant" . --exclude-dir=.git --exclude-dir=.github

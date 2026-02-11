@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(del:*)",
+      "Bash(git filter-repo:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: security audit remediation and code quality improvements\n\nSecurity fixes:\n- Remove auth bypass methods \\(bypassSignIn, signIn, skipSignIn\\)\n- Remove backend/.env from version control\n- Add .env patterns to .gitignore\n- Fix deep link security \\(remove autoVerify from custom scheme\\)\n- Disable placeholder certificate pins that would break release builds\n- Re-enable Firebase Crashlytics\n\nCode quality:\n- Add PermissionHelper for runtime permission requests\n- Add suspend alternatives to UserPreferences \\(deprecate runBlocking\\)\n- Add shutdown\\(\\) to AdminRepository for CoroutineScope cleanup\n- Add error handling in TokenRefreshManager\n- Cache regex patterns in MemoryManager\n- Replace java.util.Random with kotlin.random.Random\n- Cache GsonConverterFactory in LocalBrainManager\n- Deprecate System.gc\\(\\) call in MemoryPressureMonitor\n- Add exception logging in AccessibilityManager\n\nDependencies:\n- Upgrade OkHttp to 4.13.0\n- Upgrade Biometric to 1.4.0-alpha02\n\nConfig:\n- Refine ProGuard rules for security-crypto, Retrofit, Room, Hilt\n- Add ShadowAssistantService declaration to manifest\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git clean:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm install)",
+      "Bash(./gradlew:*)",
+      "Bash(./gradlew.bat:*)",
+      "Bash(unzip:*)",
+      "Bash(powershell -Command \"Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::OpenRead\\(''app/build/outputs/apk/debug/app-debug.apk''\\).Entries | ForEach-Object { $_FullName } | Select-String ''Hilt''\")",
+      "Bash(powershell -Command:*)",
+      "Bash(dir \"C:\\\\Users\\\\anon3\\\\Downloads\\\\ShadowAi\\\\app\\\\build\\\\outputs\\\\apk\\\\debug\")",
+      "Bash(cmd /c \"dir C:\\\\Users\\\\anon3\\\\Downloads\\\\ShadowAi\\\\app\\\\build\\\\outputs\\\\apk\")",
+      "Bash(cmd /c \"dir C:\\\\Users\\\\anon3\\\\Downloads\\\\ShadowAi\\\\app\\\\build\\\\outputs\\\\apk\\\\debug\")",
+      "Bash(cmd /c \"dir /s /b C:\\\\Users\\\\anon3\\\\Downloads\\\\ShadowAi\\\\app\\\\build\\\\outputs\\\\*.apk 2>nul\")",
+      "Bash(cmd /c \"dir /s /b C:\\\\Users\\\\anon3\\\\Downloads\\\\ShadowAi\\\\app\\\\build\\\\outputs\\\\*.apk\")",
+      "Bash(cmd /c \"dir /s app\\\\build\\\\outputs\")",
+      "Bash(test:*)",
+      "Bash(/c/Program Files/Java/jdk-24/bin/jar tf:*)",
+      "Bash(/c/Users/anon3/AppData/Local/Android/Sdk/build-tools/35.0.0/dexdump -l plain app/build/outputs/apk/debug/app-debug.apk)",
+      "Bash(cmd /c \"%LOCALAPPDATA%\\\\Android\\\\Sdk\\\\build-tools\\\\35.0.0\\\\dexdump.exe\" -l plain app\\\\build\\\\outputs\\\\apk\\\\debug\\\\app-debug.apk)",
+      "Bash(findstr:*)",
+      "Bash(adb install:*)",
+      "Bash(cmd /c \"%LOCALAPPDATA%\\\\\\\\Android\\\\\\\\Sdk\\\\\\\\platform-tools\\\\\\\\adb.exe install -r C:\\\\\\\\Users\\\\\\\\anon3\\\\\\\\Downloads\\\\\\\\ShadowAi\\\\\\\\app\\\\\\\\build\\\\\\\\outputs\\\\\\\\apk\\\\\\\\debug\\\\\\\\app-debug.apk\":*)",
+      "Bash(\"C:\\\\Users\\\\anon3\\\\AppData\\\\Local\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" devices)",
+      "WebFetch(domain:docs.ollama.com)",
+      "Bash(git -C:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git rm:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git mv:*)",
+      "Bash(dir:*)",
+      "Bash(if exist .githubworkflows dir /b .githubworkflows*.yml)",
+      "Bash(done)"
+    ]
+  }
+}

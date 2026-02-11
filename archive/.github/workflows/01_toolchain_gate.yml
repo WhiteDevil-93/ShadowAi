@@ -1,0 +1,84 @@
+name: Toolchain Gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  toolchain-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Verify Java 17
+        run: |
+          JAVA_VER=$(java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}')
+          if [[ "$JAVA_VER" == 17* ]]; then
+            echo "Java version is correct: $JAVA_VER"
+          else
+            echo "Java version mismatch: $JAVA_VER (Expected 17)"
+            exit 1
+          fi
+
+      - name: Verify Gradle 8.x
+        run: |
+          if grep -q "gradle-8" gradle/wrapper/gradle-wrapper.properties; then
+             echo "Gradle wrapper is 8.x"
+          else
+             echo "Gradle wrapper mismatch"
+             cat gradle/wrapper/gradle-wrapper.properties
+             exit 1
+          fi
+
+      - name: Verify AGP >= 8.5
+        run: |
+          if grep -q "agp = \"8.5" gradle/libs.versions.toml; then
+             echo "AGP version is pinned to 8.5+"
+          else
+             echo "AGP version mismatch or not found"
+             grep "agp" gradle/libs.versions.toml || echo "Entry missing"
+             exit 1
+          fi
+
+      - name: Verify Kotlin 1.9.x
+        run: |
+           if grep -q "kotlin = \"1.9" gradle/libs.versions.toml; then
+              echo "Kotlin version is 1.9.x"
+           else
+              echo "Kotlin version mismatch"
+              grep "kotlin" gradle/libs.versions.toml || echo "Entry missing"
+              exit 1
+           fi
+
+      - name: Verify compileSdk 36
+        run: |
+           if grep -q "compileSdk = \"36\"" gradle/libs.versions.toml; then
+              echo "compileSdk is 36"
+           else
+              echo "compileSdk mismatch"
+              exit 1
+           fi
+
+      - name: Verify targetSdk 36
+        run: |
+           if grep -q "targetSdk = \"36\"" gradle/libs.versions.toml; then
+              echo "targetSdk is 36"
+           else
+              echo "targetSdk mismatch"
+              exit 1
+           fi
+
+      - name: Verify minSdk 24
+        run: |
+           if grep -q "minSdk = \"24\"" gradle/libs.versions.toml; then
+              echo "minSdk is 24"
+           else
+              echo "minSdk mismatch"
+              exit 1
+           fi

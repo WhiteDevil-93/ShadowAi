@@ -1,0 +1,22 @@
+Compilation Errors in ShadowAi App:
+
+1. ShadowAgent.kt (line 143): Unresolved reference: parse
+2. ShadowAgent.kt (line 148): Unresolved reference: it
+3. MemoryManager.kt (line 25): Unresolved reference: saveName
+4. MemoryManager.kt (line 26): Unresolved reference: saveInterest
+5. MemoryManager.kt (line 27): Unresolved reference: saveFact
+6. MemoryManager.kt (line 28): Unresolved reference: saveContext
+7. MemoryManager.kt (line 38): Unresolved reference: SYMBOLIC_LAYER
+8. MemoryManager.kt (line 38): Unresolved reference: NAME_CONFIDENCE
+9. MemoryManager.kt (line 51): Unresolved reference: SYMBOLIC_LAYER
+10. MemoryManager.kt (line 51): Unresolved reference: INTEREST_CONFIDENCE
+11. MemoryManager.kt (line 64): Unresolved reference: SYMBOLIC_LAYER
+12. MemoryManager.kt (line 64): Unresolved reference: FACT_CONFIDENCE
+13. MemoryManager.kt (line 72): Unresolved reference: CONTEXT_LENGTH_RANGE
+14. MemoryManager.kt (line 77): Unresolved reference: LOW_CONFIDENCE_THRESHOLD
+15. MemoryManager.kt (line 92): Unresolved reference: SYMBOLIC_LAYER
+16. MemoryManager.kt (line 93): Unresolved reference: WORKING_LAYER
+17. MemoryManager.kt (line 95): Unresolved reference: CONTEXT_LIMIT
+18. TaskExecutor.kt (lines 55, 81, 135, 148, 161): Unresolved reference: RoutingDecision
+19. ProviderRepository.kt (line 276): Unresolved reference: flatten()
+20. ProviderRepository.kt (line 319): Unresolved reference: UNKNOWN

@@ -1,0 +1,30 @@
+{
+    "C_Cpp.codeAnalysis.exclude": [
+        "app/src/main/cpp/**"
+    ],
+    "C_Cpp.codeAnalysis.disable": true,
+    "clangd.disable": false,
+    "clangd.enable": true,
+    "clangd.arguments": [
+        "--compile-commands-dir=app/src/main/cpp"
+    ],
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "[kotlin]": {
+        "editor.defaultFormatter": "cstef.kotlin-formatter"
+    },
+    "[kotlinscript]": {
+        "editor.defaultFormatter": "cstef.kotlin-formatter"
+    },
+    "ktlintPath": "${workspaceFolder}/ktlint.jar",
+    "editor.formatOnSave": true,
+    "files.associations": {
+        "*.kt": "kotlin",
+        "*.kts": "kotlin"
+    },
+    "copilot.enable": {
+        "*": true,
+        "plaintext": false
+    },
+    "editor.defaultFormatter": "cstef.kotlin-formatter"
+}
