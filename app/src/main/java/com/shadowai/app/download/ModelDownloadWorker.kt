@@ -30,7 +30,7 @@ class ModelDownloadWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val modelDownloaderProvider: () -> ModelDownloader,
     private val notificationManager: DownloadNotificationManager?
-) : CoroutineWorker(applicationContext, params) {
+) : CoroutineWorker(context, params) {
 
     companion object {
         private const val TAG = "ModelDownloadWorker"

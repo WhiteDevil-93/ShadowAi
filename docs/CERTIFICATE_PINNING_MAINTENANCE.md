@@ -208,8 +208,9 @@ OkHttp will accept any of the pinned certificates.
 
 ### 2026-02-11
 - Initial implementation of certificate pinning
-- Added pins for OpenAI, Anthropic, Gemini, OpenRouter
+- Added pins for OpenAI, Anthropic, Gemini, OpenRouter, DeepSeek, Mistral AI, xAI, Groq
 - Created monitoring and error handling infrastructure
+- Created comprehensive maintenance guide
 
 ---
 
