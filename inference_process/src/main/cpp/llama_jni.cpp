@@ -22,15 +22,15 @@
 
 // ==================== Internal State ====================
 
-struct LlamaContextState {
+struct LlamaContext {
     struct llama_model* model = nullptr;
     struct llama_context* ctx = nullptr;
     std::string model_path;
     std::mutex mutex;
     std::atomic<bool> cancel_requested{false};
 
-    LlamaContextState() = default;
-    ~LlamaContextState() {
+    LlamaContext() = default;
+    ~LlamaContext() {
         if (ctx) llama_free(ctx);
         if (model) llama_model_free(model);
     }
@@ -39,7 +39,7 @@ struct LlamaContextState {
 class ModelRegistry {
 private:
     std::mutex mutex_;
-    std::map<jlong, std::unique_ptr<LlamaContextState>> contexts_;
+    std::map<jlong, std::unique_ptr<LlamaContext>> contexts_;
     std::atomic<jlong> next_handle_{1};
 
 public:
@@ -88,6 +88,28 @@ std::string jstring_to_str(JNIEnv* env, jstring jstr) {
 static void llama_log_callback(ggml_log_level level, const char* text, void* user_data) {
     if (level == GGML_LOG_LEVEL_ERROR) LOGE("llama.cpp: %s", text);
     else LOGI("llama.cpp: %s", text);
+}
+
+static void llama_batch_clear(llama_batch& batch) {
+    batch.n_tokens = 0;
+}
+
+static void llama_batch_add(
+    llama_batch& batch,
+    llama_token token,
+    llama_pos pos,
+    std::initializer_list<llama_seq_id> seq_ids,
+    bool logits
+) {
+    const int index = batch.n_tokens++;
+    batch.token[index] = token;
+    batch.pos[index] = pos;
+    batch.n_seq_id[index] = static_cast<int32_t>(seq_ids.size());
+    int32_t seqIndex = 0;
+    for (llama_seq_id seqId : seq_ids) {
+        batch.seq_id[index][seqIndex++] = seqId;
+    }
+    batch.logits[index] = logits;
 }
 
 // ==================== JNI Lifecycle ====================
