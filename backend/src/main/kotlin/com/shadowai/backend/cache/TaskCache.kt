@@ -29,7 +29,10 @@ class TaskCache(
     init {
         // Run cleanup every 5 minutes using scheduleWithFixedDelay for reliable execution
         cleanupScheduler.scheduleWithFixedDelay(
-            { cleanupExpiredEntries() },
+            {
+                runCatching { cleanupExpiredEntries() }
+                    .onFailure { /* keep scheduler alive even if cleanup fails */ }
+            },
             5, 5, TimeUnit.MINUTES
         )
     }

@@ -143,7 +143,7 @@ class PixAIAdapter(
         prompt: String,
         parameters: Map<String, Any> = emptyMap()
     ): Result<PixAIImageResult> {
-        return execute(Transform.TextToImage(), prompt, parameters) as Result<PixAIImageResult>
+        return executeTextToImage(prompt, parameters)
     }
 
     /**
@@ -522,11 +522,16 @@ class PixAIAdapter(
         }
     }
 
+    /**
+     * M-2 FIX: Preserve original exception context in error mapping.
+     * The original exception is now passed as the cause for better debugging.
+     */
     private fun mapToDomainError(e: Exception): PixAIException {
         return when (e) {
             is IOException -> PixAIException.NetworkError(e)
             is PixAIException -> e
-            else -> PixAIException.UnknownError(-1, e.message)
+            // M-2 FIX: Pass original exception as cause instead of just message
+            else -> PixAIException.UnknownError(-1, e.message, cause = e)
         }
     }
 
@@ -678,9 +683,11 @@ class PixAIAdapter(
         class UnknownError(
             code: Int,
             message: String?,
-            apiErrorCode: String? = null
+            apiErrorCode: String? = null,
+            cause: Throwable? = null
         ) : PixAIException(
             message = "Unknown error (HTTP $code): ${message ?: "No details"}",
+            cause = cause,
             errorCode = apiErrorCode
         )
     }

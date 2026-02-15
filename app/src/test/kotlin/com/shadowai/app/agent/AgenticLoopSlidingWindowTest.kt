@@ -4,7 +4,7 @@ import com.shadowai.app.ai.TokenCounter
 import com.shadowai.app.execution.DeviceAction
 import com.shadowai.app.execution.DeviceActionExecutor
 import com.shadowai.app.execution.TaskExecutor
-import com.shadowai.app.providers.ProviderRepository
+// REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
 import com.shadowai.app.providers.ProviderSelector
 import com.shadowai.app.routing.RoutingDecision
 import com.shadowai.app.routing.RoutingEngine
@@ -43,8 +43,7 @@ class AgenticLoopSlidingWindowTest {
     @Mock
     private lateinit var providerSelector: ProviderSelector
 
-    @Mock
-    private lateinit var providerRepository: ProviderRepository
+    // REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
 
     @Mock
     private lateinit var planParser: PlanParser
@@ -202,7 +201,7 @@ class AgenticLoopSlidingWindowTest {
             taskExecutor = taskExecutor,
             routingEngine = routingEngine,
             providerSelector = providerSelector,
-            providerRepository = providerRepository,
+            // REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
             planParser = planParser,
             deviceActionExecutor = deviceActionExecutor,
             verificationEngine = verificationEngine,
@@ -266,7 +265,7 @@ class AgenticLoopSlidingWindowTest {
             taskExecutor = taskExecutor,
             routingEngine = routingEngine,
             providerSelector = providerSelector,
-            providerRepository = providerRepository,
+            // REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
             planParser = planParser,
             deviceActionExecutor = deviceActionExecutor,
             verificationEngine = verificationEngine,
@@ -325,7 +324,7 @@ class AgenticLoopSlidingWindowTest {
             taskExecutor = taskExecutor,
             routingEngine = routingEngine,
             providerSelector = providerSelector,
-            providerRepository = providerRepository,
+            // REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
             planParser = planParser,
             deviceActionExecutor = deviceActionExecutor,
             verificationEngine = verificationEngine,
@@ -381,7 +380,7 @@ class AgenticLoopSlidingWindowTest {
             taskExecutor = taskExecutor,
             routingEngine = routingEngine,
             providerSelector = providerSelector,
-            providerRepository = providerRepository,
+            // REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
             planParser = planParser,
             deviceActionExecutor = deviceActionExecutor,
             verificationEngine = verificationEngine,
@@ -437,7 +436,7 @@ class AgenticLoopSlidingWindowTest {
             taskExecutor = taskExecutor,
             routingEngine = routingEngine,
             providerSelector = providerSelector,
-            providerRepository = providerRepository,
+            // REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
             planParser = planParser,
             deviceActionExecutor = deviceActionExecutor,
             verificationEngine = verificationEngine,
@@ -495,7 +494,7 @@ class AgenticLoopSlidingWindowTest {
             taskExecutor = taskExecutor,
             routingEngine = routingEngine,
             providerSelector = providerSelector,
-            providerRepository = providerRepository,
+            // REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
             planParser = planParser,
             deviceActionExecutor = deviceActionExecutor,
             verificationEngine = verificationEngine,
@@ -553,7 +552,7 @@ class AgenticLoopSlidingWindowTest {
             taskExecutor = taskExecutor,
             routingEngine = routingEngine,
             providerSelector = providerSelector,
-            providerRepository = providerRepository,
+            // REPOSITORY ADAPTER CLEANUP: ProviderRepository facade removed - using split repositories directly
             planParser = planParser,
             deviceActionExecutor = deviceActionExecutor,
             verificationEngine = verificationEngine,

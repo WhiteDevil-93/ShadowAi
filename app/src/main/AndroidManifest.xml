@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <!-- CALL_PHONE removed: AI assistant should not make phone calls without explicit user action -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <!-- Voice and Speech -->
@@ -20,10 +20,20 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    
+
     <!-- General storage access for loading models, exporting conversations, etc. -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+
+    <!-- API 30+ intent visibility: declare packages this app queries -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 
     <application
         android:name=".ShadowApplication"
@@ -34,16 +44,33 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.ShadowAi"
-        android:requestLegacyExternalStorage="true"
         android:largeHeap="true"
         tools:targetApi="31">
         <activity
             android:name=".ComposeMainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.ShadowAi">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Intent Share Sheet: Receive text and images from other apps -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
             </intent-filter>
 
             <!-- Deep Link Support: Custom scheme (for internal/debug use) -->
@@ -51,7 +78,9 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="shadowai" />
+                <data android:scheme="shadowai"
+                      android:host="action"
+                      android:pathPrefix="/" />
             </intent-filter>
 
             <!-- App Links: HTTPS verified deep links (production)
@@ -77,6 +106,33 @@
             android:enabled="true"
             android:description="@string/inference_service_description"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Shadow AI Home Screen Widget -->
+        <receiver
+            android:name=".widget.ShadowAiWidgetProvider"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_DISABLED" />
+                <action android:name="com.shadowai.app.action.REFRESH_WIDGET" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_shadow_ai_info" />
+        </receiver>
+
+        <!-- FileProvider for sharing exported files -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths" />
+        </provider>
 
     </application>
 </manifest>

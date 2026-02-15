@@ -433,4 +433,76 @@
         <item>GPT-4o</item>
         <item>Gemini Ultra</item>
     </string-array>
+
+    <!-- Performance Optimization Settings -->
+    <string name="settings_performance_optimization">Performance Optimization</string>
+    <string name="settings_nnapi_acceleration">NNAPI Acceleration</string>
+    <string name="settings_nnapi_acceleration_desc">Use NPU for faster inference (Pixel, Samsung, etc.)</string>
+    <string name="settings_memory_mapped_models">Memory-Mapped Models</string>
+    <string name="settings_memory_mapped_models_desc">Allow running models larger than RAM (recommended)</string>
+    <string name="settings_isolated_inference">Isolated Inference Process</string>
+    <string name="settings_isolated_inference_desc">Run local inference in :inference process for crash/memory isolation</string>
+    <string name="settings_generation_parameters">Generation Parameters</string>
+    <string name="settings_advanced_settings">Advanced Settings</string>
+    <string name="settings_auto_summarization">Auto-Summarization</string>
+    <string name="settings_auto_summarization_desc">Automatically summarize long conversations at 70% context</string>
+    <string name="settings_temperature">Temperature</string>
+    <string name="settings_temperature_desc">Creativity vs Determinism</string>
+    <string name="settings_top_p">Top P (Nucleus Sampling)</string>
+    <string name="settings_top_p_desc">Consider tokens with top_p probability mass</string>
+    <string name="settings_top_k">Top K</string>
+    <string name="settings_top_k_desc">Consider top_k most likely tokens</string>
+    <string name="settings_max_tokens">Max Tokens</string>
+    <string name="settings_repetition_penalty">Repetition Penalty</string>
+    <string name="settings_repetition_penalty_desc">Discourage repeated text</string>
+    <string name="settings_safety_filters">Safety Filters</string>
+    <string name="settings_safety_filters_desc">Enable content safety filtering</string>
+    <string name="settings_generation_parameters_subtitle">Generation Parameters</string>
+
+    <!-- Summary Indicator -->
+    <string name="summary_messages_summarized">⬇️ %1$d messages summarized</string>
+    <string name="summary_tap_to_view">Tap to view summary</string>
+    <string name="summary_conversation_title">Conversation Summary</string>
+    <string name="summary_restore_messages">Restore Messages</string>
+    <string name="summary_copy">Copy</string>
+    <string name="summary_badge">%1$d summarized</string>
+    <string name="summary_dismiss">Dismiss</string>
+    <string name="summary_duration_format">%1$d messages • %2$s</string>
+
+    <!-- Widget Accessibility - L-7/L-8 -->
+    <string name="widget_title">Shadow AI Assistant</string>
+    <string name="widget_voice_cd">Start voice input - tap to speak to Shadow</string>
+    <string name="widget_empty_text">No recent messages</string>
+    <string name="widget_message_cd">Recent message from Shadow</string>
+    <string name="widget_touch_cd">Tap to open Shadow AI</string>
+
+    <!-- Voice Recognition -->
+    <string name="voice_hotword">Hey Shadow</string>
+    <string name="voice_hotword_alt">Shadow</string>
+    <string name="voice_speak_prompt">Speak to Shadow</string>
+    <string name="voice_error_audio">Audio recording error</string>
+    <string name="voice_error_client">Client error</string>
+    <string name="voice_error_permissions">Insufficient permissions</string>
+    <string name="voice_error_network">Network error</string>
+    <string name="voice_error_network_timeout">Network timeout</string>
+    <string name="voice_error_no_match">No speech detected</string>
+    <string name="voice_error_recognizer_busy">Recognizer busy</string>
+    <string name="voice_error_server">Server error</string>
+    <string name="voice_error_speech_timeout">Speech timeout</string>
+    <string name="voice_error_unknown">Unknown error</string>
+    <string name="voice_error_init">Failed to initialize speech recognition</string>
+    <string name="voice_error_hotword_start">Failed to start hotword detection</string>
+    <string name="voice_error_voice_input">Failed to start voice input</string>
+    <string name="voice_error_permission">Microphone permission is required for voice recognition</string>
+
+    <!-- Widget -->
+    <string name="widget_description">Quick access to Shadow AI with voice input and message preview</string>
+    <string name="widget_no_messages">No recent messages</string>
+    <string name="widget_tap_mic">Tap microphone to start</string>
+
+    <!-- Summary Duration Formatting -->
+    <string name="duration_less_than_minute">" &lt; 1 min"</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d hr</string>
+    <string name="duration_days">%1$d days</string>
 </resources>

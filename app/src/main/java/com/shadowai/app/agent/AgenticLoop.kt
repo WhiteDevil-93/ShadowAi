@@ -5,7 +5,6 @@ import com.shadowai.app.ai.TokenCounter
 import com.shadowai.app.execution.DeviceAction
 import com.shadowai.app.execution.DeviceActionExecutor
 import com.shadowai.app.execution.TaskExecutor
-import com.shadowai.app.providers.ProviderRepository
 import com.shadowai.app.providers.ProviderSelector
 import com.shadowai.app.routing.ExecutionSource
 import com.shadowai.app.routing.RoutingDecision
@@ -62,7 +61,7 @@ class AgenticLoop(
     private val taskExecutor: TaskExecutor,
     private val routingEngine: RoutingEngine,
     private val providerSelector: ProviderSelector,
-    private val providerRepository: ProviderRepository,
+    // REPOSITORY ADAPTER CLEANUP: Removed ProviderRepository facade - not actually used
     private val planParser: PlanParser,
     private val deviceActionExecutor: DeviceActionExecutor,
     private val verificationEngine: VerificationEngine,

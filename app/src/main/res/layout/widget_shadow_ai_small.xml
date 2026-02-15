@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small Widget Layout (2x2) - Voice button + Last message -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- App Title -->
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:contentDescription="@string/widget_title"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Voice Input Button - L-8: Accessibility enhanced -->
+    <FrameLayout
+        android:id="@+id/widget_voice_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:background="@drawable/widget_voice_button_background"
+        android:contentDescription="@string/widget_voice_cd">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:contentDescription="@null"
+            android:tint="@android:color/white" />
+    </FrameLayout>
+
+    <!-- Last Message or Empty State -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/widget_message_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:contentDescription="@string/widget_message_cd"
+            android:textColor="@android:color/white"
+            android:textSize="11sp"
+            android:maxLines="3"
+            android:ellipsize="end"
+            android:visibility="gone"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/widget_empty_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/widget_empty_text"
+            android:contentDescription="@string/widget_empty_text"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="10sp"
+            android:visibility="visible"
+            android:gravity="center" />
+    </LinearLayout>
+
+</LinearLayout>

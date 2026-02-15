@@ -24,11 +24,17 @@ interface MessageDao {
     @Query("SELECT * FROM messages ORDER BY timestamp ASC")
     suspend fun getAllMessages(): List<ChatMessageEntity>
 
+    @Query("SELECT * FROM messages ORDER BY timestamp ASC")
+    fun getAllMessagesOnce(): List<ChatMessageEntity>
+
     @Query("SELECT * FROM messages ORDER BY timestamp ASC LIMIT :limit OFFSET :offset")
     suspend fun getMessages(limit: Int, offset: Int): List<ChatMessageEntity>
 
     @Query("SELECT COUNT(*) FROM messages")
     suspend fun getMessageCount(): Int
+
+    @Query("SELECT * FROM messages ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLastMessage(): ChatMessageEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: ChatMessageEntity)
@@ -41,6 +47,9 @@ interface MessageDao {
 
     @Query("DELETE FROM messages")
     suspend fun clearHistory()
+
+    @Query("DELETE FROM messages")
+    fun deleteAllMessages()
 }
 
 @Entity(

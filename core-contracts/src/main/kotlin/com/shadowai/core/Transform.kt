@@ -80,4 +80,18 @@ sealed class Transform {
         override val sourceModality: Modality = Modality.Video,
         override val targetModality: Modality = Modality.Text
     ) : Transform()
+
+    /** Converts text to embeddings for semantic search or analysis */
+    data class TextToEmbeddings(
+        override val description: String = "Convert text to embeddings",
+        override val sourceModality: Modality = Modality.Text,
+        override val targetModality: Modality = Modality.Mixed
+    ) : Transform()
+
+    /** Converts embeddings back to text (e.g., reconstruction or generation) */
+    data class EmbeddingsToText(
+        override val description: String = "Convert embeddings to text",
+        override val sourceModality: Modality = Modality.Mixed,
+        override val targetModality: Modality = Modality.Text
+    ) : Transform()
 }

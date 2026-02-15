@@ -3,6 +3,7 @@ package com.shadowai.app.ai
 import android.app.ActivityManager
 import android.content.Context
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -22,7 +23,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class MemoryPressureMonitor @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
 
     companion object {

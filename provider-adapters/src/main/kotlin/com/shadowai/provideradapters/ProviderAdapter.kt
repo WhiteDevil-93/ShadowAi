@@ -9,6 +9,7 @@ import com.shadowai.core.ProviderId
 import com.shadowai.core.Transform
 import com.shadowai.core.security.SecretBytes
 import kotlinx.coroutines.flow.Flow
+import java.util.Arrays
 
 /**
  * Base interface for all provider adapters.
@@ -34,6 +35,13 @@ interface ProviderAdapter : ProviderExecutor {
      * Returns the health status of the provider.
      */
     override suspend fun isAvailable(): Boolean
+
+    /**
+     * Clean up resources held by this adapter.
+     * Called when the adapter is evicted from cache or explicitly removed.
+     * Implementations should release heavy resources like loaded models or file handles.
+     */
+    fun shutdown() {}
 
     /**
      * Legacy execution signature used by existing adapters.
@@ -65,7 +73,7 @@ interface ProviderAdapter : ProviderExecutor {
 
     /**
      * Executes a streaming transformation with incremental responses.
-     * 
+     *
      * This is an optional feature - adapters can override this to provide
      * real-time streaming output. The default implementation returns null
      * indicating streaming is not supported.
@@ -193,7 +201,6 @@ interface ProviderAdapter : ProviderExecutor {
 data class ProviderAdapterConfig(
     val providerId: ProviderId,
     val baseUrl: String = "",
-    val apiKey: String? = null,
     val apiKeySecret: SecretBytes? = null,
     val modelId: String? = null,
     val timeoutSeconds: Int = 60,
@@ -204,13 +211,12 @@ data class ProviderAdapterConfig(
      * Prefer [resolveApiKeySecret] for new code.
      */
     fun resolveApiKey(): String? {
-        apiKey?.takeIf { it.isNotBlank() }?.let { return it }
         val secret = apiKeySecret ?: return null
         val bytes = secret.copy()
         return try {
             String(bytes, Charsets.UTF_8).takeIf { it.isNotBlank() }
         } finally {
-            java.util.Arrays.fill(bytes, 0)
+            Arrays.fill(bytes, 0.toByte())
         }
     }
 
@@ -218,9 +224,7 @@ data class ProviderAdapterConfig(
      * Returns the API key as SecretBytes for secure operations.
      */
     fun resolveApiKeySecret(): SecretBytes? {
-        apiKeySecret?.let { return it }
-        val plain = apiKey?.takeIf { it.isNotBlank() } ?: return null
-        return SecretBytes.fromByteArray(plain.toByteArray(Charsets.UTF_8))
+        return apiKeySecret
     }
 }
 

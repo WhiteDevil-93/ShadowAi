@@ -24,8 +24,5 @@ object DataStoreModule {
         return appContext.secureDataStore
     }
 
-    @Provides
-    fun provideContext(@ApplicationContext appContext: Context): Context {
-        return appContext
-    }
+    // Removed redundant provideContext — Hilt provides @ApplicationContext automatically
 }

@@ -28,11 +28,30 @@ class SecretBytes(private val size: Int) : Closeable {
     }
 
     /**
-     * Use the secret bytes in a safe context and automatically zero them afterward.
+     * Use the secret bytes in a safe context.
+     * The bytes remain available for future use; call [dispose] when done
+     * with the entire SecretBytes instance.
+     *
+     * For one-shot usage where the data should be zeroed immediately
+     * after use, prefer [useAndDispose].
      */
     fun <T> withSecretBytes(block: (ByteArray) -> T): T {
         check(!isDisposed) { "SecretBytes has been disposed" }
         return block(bytes)
+    }
+
+    /**
+     * Use the secret bytes in a safe context and **dispose** (zero) them
+     * immediately afterwards.  Use this when the SecretBytes instance is
+     * not needed after the block completes.
+     */
+    fun <T> useAndDispose(block: (ByteArray) -> T): T {
+        check(!isDisposed) { "SecretBytes has been disposed" }
+        return try {
+            block(bytes)
+        } finally {
+            dispose()
+        }
     }
 
     /**
@@ -48,11 +67,17 @@ class SecretBytes(private val size: Int) : Closeable {
 
     /**
      * Get a copy of the secret bytes (use with caution).
+     * The caller is responsible for zeroing the returned array.
      */
     fun copy(): ByteArray {
         check(!isDisposed) { "SecretBytes has been disposed" }
         return bytes.clone()
     }
+
+    /**
+     * The size in bytes.
+     */
+    val length: Int get() = size
 
     /**
      * Dispose of the secret bytes and zero the memory.

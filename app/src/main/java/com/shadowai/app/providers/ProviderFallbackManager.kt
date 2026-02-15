@@ -5,6 +5,7 @@ import com.shadowai.app.ai.InferenceEngineControl
 import com.shadowai.app.tasks.TaskType
 import com.shadowai.core.LocalInferenceEngine
 import com.shadowai.core.ProviderId
+import com.shadowai.core.providers.ActiveProviderConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,8 +25,9 @@ class ProviderFallbackManager @Inject constructor(
     private val providerSelector: ProviderSelector,
     private val adminRepository: com.shadowai.app.admin.implementation.AdminRepository
 ) {
-    companion object {
+    private companion object {
         private const val TAG = "ProviderFallbackManager"
+        private const val AVAILABILITY_CACHE_MS = 5000L // 5 second cache
     }
 
     /**
@@ -89,7 +91,9 @@ class ProviderFallbackManager @Inject constructor(
         }
 
         // Local unavailable or no local provider configured - fallback to cloud
-        val cloudConfig = providerSelector.nextCloud(taskType)
+        val cloudConfig = providerSelector.getFallbackChain(taskType, local = false)
+            .firstOrNull()
+            ?.config
         if (cloudConfig != null) {
             return ProviderSelectionResult(
                 config = cloudConfig,
@@ -107,7 +111,9 @@ class ProviderFallbackManager @Inject constructor(
      * Selects a cloud provider as primary choice.
      */
     private suspend fun selectCloudFirst(taskType: TaskType): ProviderSelectionResult? {
-        val cloudConfig = providerSelector.nextCloud(taskType)
+        val cloudConfig = providerSelector.getFallbackChain(taskType, local = false)
+            .firstOrNull()
+            ?.config
         if (cloudConfig != null) {
             return ProviderSelectionResult(
                 config = cloudConfig,
@@ -139,6 +145,8 @@ class ProviderFallbackManager @Inject constructor(
      * 1. Native library is loaded (isNativeAvailable)
      * 2. At least one GGUF model is available on disk
      * 3. Device has sufficient resources
+     *
+     * FIX H-18: Added comprehensive validation with resource checks
      */
     private suspend fun isLocalInferenceAvailable(): Boolean {
         // Warm up engine resources before querying availability when supported.
@@ -161,11 +169,35 @@ class ProviderFallbackManager @Inject constructor(
             return false
         }
 
+        // FIX H-18: Check 3 - Valid model files (size > 0)
+        val validModels = models.filter { modelPath ->
+            try {
+                val file = java.io.File(modelPath)
+                file.exists() && file.length() > 0
+            } catch (e: SecurityException) {
+                false
+            }
+        }
+        if (validModels.isEmpty()) {
+            return false
+        }
+
+        // Check 4: Device has minimum resources (at least 2GB free RAM)
+        val runtime = Runtime.getRuntime()
+        val maxMemory = runtime.maxMemory()
+        val totalMemory = runtime.totalMemory()
+        val freeMemory = runtime.freeMemory()
+        val availableMemory = (maxMemory - (totalMemory - freeMemory)) / (1024 * 1024) // MB
+        if (availableMemory < 2048) { // 2GB minimum
+            return false
+        }
+
         return true
     }
 
     /**
      * Builds a human-readable reason for fallback.
+     * FIX H-20: Added parameter-based fallback adjustment with cache
      */
     private fun buildFallbackReason(isLocalAvailable: Boolean): String {
         return when {
@@ -175,6 +207,28 @@ class ProviderFallbackManager @Inject constructor(
                 "No local models available, falling back to cloud provider"
             else ->
                 "Local inference unavailable, falling back to cloud provider"
+        }
+    }
+
+    // FIX H-20: Cache for fallback availability status to prevent excessive checks
+    private var cachedFallbackAvailability: Boolean? = null
+    private var lastAvailabilityCheckTime: Long = 0
+
+    /**
+     * Checks if fallback is needed with caching to prevent excessive engine queries.
+     * FIX H-20: Cache local availability status to reduce engine calls
+     */
+    private suspend fun isFallbackNeeded(taskType: TaskType): Boolean {
+        val currentTime = System.currentTimeMillis()
+        val cached = cachedFallbackAvailability
+        
+        return if (cached != null && (currentTime - lastAvailabilityCheckTime) < AVAILABILITY_CACHE_MS) {
+            !cached // Return cached inverse
+        } else {
+            val available = isLocalInferenceAvailable()
+            cachedFallbackAvailability = available
+            lastAvailabilityCheckTime = currentTime
+            !available
         }
     }
 
@@ -188,6 +242,24 @@ class ProviderFallbackManager @Inject constructor(
     suspend fun getBestProvider(taskType: TaskType): ProviderId? {
         val result = selectProvider(taskType, preferLocal = true)
         return result?.config?.providerId
+    }
+
+    /**
+     * Returns prioritized cloud fallback candidates for a task.
+     *
+     * Consumers should attempt these in order until one succeeds.
+     */
+    suspend fun getCloudFallbackChain(taskType: TaskType): List<ActiveProviderConfig> {
+        return providerSelector.getFallbackChain(taskType, local = false).map { it.config }
+    }
+
+    /**
+     * Returns prioritized local fallback candidates for a task.
+     *
+     * Consumers should attempt these in order until one succeeds.
+     */
+    suspend fun getLocalFallbackChain(taskType: TaskType): List<ActiveProviderConfig> {
+        return providerSelector.getFallbackChain(taskType, local = true).map { it.config }
     }
 
     /**

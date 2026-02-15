@@ -1,6 +1,9 @@
 package com.shadowai.app.ui
 
+import android.content.Context
 import android.net.Uri
+import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shadowai.app.agent.AgentResult
@@ -8,13 +11,16 @@ import com.shadowai.app.agent.ShadowAgent
 import com.shadowai.app.db.MessageDao
 import com.shadowai.app.db.toEntity
 import com.shadowai.app.db.toModel
+import com.shadowai.app.widget.ShadowAiWidgetProvider
 import com.shadowai.core.security.PiiMaskingProcessor
 import com.shadowai.core.security.PromptInjectionDefense
 import com.shadowai.core.ProviderId
-import com.shadowai.app.providers.ProviderRepository
+// REPOSITORY ADAPTER CLEANUP: Direct split repository access - facade removed
+import com.shadowai.provideradapters.ProviderSecretRepository
 import com.shadowai.app.ui.workflows.ImageGenParams
 import com.shadowai.core.Artifact
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,27 +52,65 @@ sealed class ChatError(val message: String) {
 data class ChatUiState(
     val messages: List<ChatMessage> = emptyList(),
     val isLoading: Boolean = false,
-    val error: ChatError? = null
+    val error: ChatError? = null,
+    val sharedText: String? = null,  // Text from Intent Share Sheet
+    val sharedImages: List<Uri> = emptyList()  // Images from Intent Share Sheet
 )
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val agent: ShadowAgent,
     private val messageDao: MessageDao,
-    private val providerRepository: ProviderRepository,
+    // REPOSITORY ADAPTER CLEANUP: Direct split repository access - facade removed
+    private val secretRepository: ProviderSecretRepository,
     private val piiMaskingProcessor: PiiMaskingProcessor,
-    private val promptInjectionDefense: PromptInjectionDefense
+    private val promptInjectionDefense: PromptInjectionDefense,
+    // M-19: SavedStateHandle for navigation state persistence
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "ChatViewModel"
+        
+        // M-19: SavedStateHandle keys for navigation state persistence
+        private const val KEY_IS_LOADING = "chat_is_loading"
+        private const val KEY_SHARED_TEXT = "chat_shared_text"
+        private const val KEY_SHARING_ACTIVE = "chat_sharing_active"
     }
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     init {
+        // M-19: Restore navigation state from SavedStateHandle
+        restoreNavigationState()
         loadHistory()
+    }
+
+    // M-19: Save navigation state to SavedStateHandle
+    private fun saveNavigationState() {
+        savedStateHandle.set(KEY_IS_LOADING, _uiState.value.isLoading)
+        savedStateHandle.set(KEY_SHARED_TEXT, _uiState.value.sharedText)
+        savedStateHandle.set(KEY_SHARING_ACTIVE, _uiState.value.sharedImages.isNotEmpty())
+    }
+
+    // M-19: Restore navigation state from SavedStateHandle
+    private fun restoreNavigationState() {
+        val wasLoading = savedStateHandle.get<Boolean>(KEY_IS_LOADING) ?: false
+        val sharedText = savedStateHandle.get<String>(KEY_SHARED_TEXT)
+        val wasSharing = savedStateHandle.get<Boolean>(KEY_SHARING_ACTIVE) ?: false
+
+        if (wasLoading || sharedText != null || wasSharing) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = wasLoading,
+                sharedText = sharedText
+            )
+            Log.d(
+                TAG,
+                "Restored navigation state: loading=$wasLoading, hasSharedText=${!sharedText.isNullOrBlank()}"
+            )
+        }
     }
 
     private fun loadHistory() {
@@ -92,7 +136,9 @@ class ChatViewModel @Inject constructor(
         if (text.isBlank()) return
 
         viewModelScope.launch {
+            // M-19: Save navigation state before loading
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            saveNavigationState()
 
             // Add user message immediately (with original text for local storage)
             val userMsg = ChatMessage(text = text, isUser = true)
@@ -234,7 +280,10 @@ class ChatViewModel @Inject constructor(
     }
 
     fun saveApiKey(providerId: ProviderId, apiKey: String) {
-        providerRepository.saveApiKey(providerId, apiKey)
+        // REPOSITORY ADAPTER CLEANUP: Direct split repository access - facade removed
+        com.shadowai.core.security.discoveredApiKey(apiKey).use { secret ->
+            secretRepository.saveApiKey(providerId.name, secret)
+        }
     }
 
     fun generateImage(params: ImageGenParams) {
@@ -242,6 +291,91 @@ class ChatViewModel @Inject constructor(
         val prompt = "Generate image: ${params.prompt}" +
                      if (params.negativePrompt.isNotBlank()) " (Negative: ${params.negativePrompt})" else ""
         sendMessage(prompt)
+    }
+
+    /**
+     * Set shared text from Intent Share Sheet.
+     * This pre-fills the chat input with text shared from another app.
+     * M-19: Persists to SavedStateHandle for navigation state restoration.
+     */
+    fun setSharedText(text: String?) {
+        _uiState.value = _uiState.value.copy(sharedText = text)
+        savedStateHandle.set(KEY_SHARED_TEXT, text)
+    }
+
+    /**
+     * Set shared images from Intent Share Sheet.
+     * These images can be attached to messages or analyzed by the AI.
+     * M-19: Persists to SavedStateHandle for navigation state restoration.
+     */
+    fun setSharedImages(images: List<Uri>) {
+        _uiState.value = _uiState.value.copy(sharedImages = images)
+        savedStateHandle.set(KEY_SHARING_ACTIVE, images.isNotEmpty())
+    }
+
+    /**
+     * Clear shared content after it has been processed.
+     * M-19: Clears SavedStateHandle entries.
+     */
+    fun clearSharedContent() {
+        _uiState.value = _uiState.value.copy(
+            sharedText = null,
+            sharedImages = emptyList()
+        )
+        savedStateHandle.remove<String>(KEY_SHARED_TEXT)
+        savedStateHandle.remove<Boolean>(KEY_SHARING_ACTIVE)
+    }
+
+    /**
+     * Send a message with optional image attachments.
+     * Processes both text and images from the share sheet.
+     */
+    fun sendMessageWithAttachments(text: String, imageUris: List<Uri> = emptyList()) {
+        var messageText = text
+        
+        // Add image descriptions to the message if images are present
+        if (imageUris.isNotEmpty()) {
+            val imageDescription = if (imageUris.size == 1) {
+                "[Shared Image]"
+            } else {
+                "[Shared ${imageUris.size} Images]"
+            }
+            messageText = if (text.isNotBlank()) {
+                "$imageDescription\n\n$text"
+            } else {
+                imageDescription
+            }
+        }
+        
+        // Clear shared content and send the message
+        clearSharedContent()
+        sendMessage(messageText)
+    }
+
+    /**
+     * Restores previously summarized messages back into the active chat timeline.
+     */
+    fun restoreSummarizedMessages(messages: List<com.shadowai.app.ui.chat.ChatMessage>) {
+        if (messages.isEmpty()) return
+
+        viewModelScope.launch {
+            val restoredUiMessages = messages.map(com.shadowai.app.ui.chat.ChatMessage::toUiMessage)
+            val mergedMessages = (_uiState.value.messages + restoredUiMessages)
+                .distinctBy { it.id }
+                .sortedBy { it.timestamp }
+
+            _uiState.value = _uiState.value.copy(messages = mergedMessages)
+
+            restoredUiMessages.forEach { message ->
+                try {
+                    messageDao.insertMessage(message.toEntity())
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to persist restored message: ${message.id}", e)
+                }
+            }
+
+            ShadowAiWidgetProvider.updateAllWidgets(context)
+        }
     }
 
     private suspend fun addMessage(message: ChatMessage) {
@@ -252,6 +386,8 @@ class ChatViewModel @Inject constructor(
         if (!message.isThinking) {
             try {
                 messageDao.insertMessage(message.toEntity())
+                // Trigger widget update after inserting message
+                ShadowAiWidgetProvider.updateAllWidgets(context)
             } catch (e: Exception) {
                 android.util.Log.e(TAG, "Failed to persist message: ${message.id}", e)
             }

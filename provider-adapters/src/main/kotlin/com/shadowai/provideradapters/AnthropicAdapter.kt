@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.math.roundToLong
+import kotlin.random.Random
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -470,11 +472,16 @@ class AnthropicAdapter(
         }
     }
 
+    /**
+     * M-2 FIX: Preserve original exception context in error mapping.
+     * The original exception is now passed as the cause for better debugging.
+     */
     private fun mapToDomainError(e: Exception): AnthropicException {
         return when (e) {
             is IOException -> AnthropicException.NetworkError(e)
             is AnthropicException -> e
-            else -> AnthropicException.UnknownError(-1, e.message)
+            // M-2 FIX: Pass original exception as cause instead of just message
+            else -> AnthropicException.UnknownError(-1, e.message, cause = e)
         }
     }
 
@@ -632,9 +639,11 @@ class AnthropicAdapter(
         class UnknownError(
             code: Int,
             message: String?,
-            errorType: String? = null
+            errorType: String? = null,
+            cause: Throwable? = null
         ) : AnthropicException(
             message = "Unknown error (HTTP $code): ${message ?: "No details"}",
+            cause = cause,
             errorType = errorType
         )
     }

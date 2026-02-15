@@ -8,6 +8,7 @@ import androidx.work.WorkerParameters
 import com.shadowai.app.ai.ModelDownloader
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import javax.inject.Provider
 
 /**
  * WorkManager worker for downloading GGUF models in the background.
@@ -28,7 +29,7 @@ import dagger.assisted.AssistedInject
 class ModelDownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted params: WorkerParameters,
-    private val modelDownloaderProvider: () -> ModelDownloader,
+    private val modelDownloaderProvider: Provider<ModelDownloader>,
     private val notificationManager: DownloadNotificationManager?
 ) : CoroutineWorker(context, params) {
 
@@ -47,7 +48,7 @@ class ModelDownloadWorker @AssistedInject constructor(
         const val FILE_NAME = "file_name"
     }
 
-    private val modelDownloader: ModelDownloader by lazy { modelDownloaderProvider() }
+    private val modelDownloader: ModelDownloader by lazy { modelDownloaderProvider.get() }
 
     override suspend fun doWork(): Result {
         val modelUrl = inputData.getString(KEY_MODEL_URL)
@@ -69,7 +70,7 @@ class ModelDownloadWorker @AssistedInject constructor(
             notificationManager?.showDownloadFailure(downloadId, destination, e.message)
 
             if (runAttemptCount < MAX_RETRIES) {
-                Log.i(TAG, "Scheduling retry $(${runAttemptCount + 1}/$MAX_RETRIES)")
+                Log.i(TAG, "Scheduling retry ${runAttemptCount + 1}/$MAX_RETRIES")
                 Result.retry()
             } else {
                 Log.e(TAG, "Max retries reached, giving up")

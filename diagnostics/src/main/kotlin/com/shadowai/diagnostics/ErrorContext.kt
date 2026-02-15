@@ -29,27 +29,3 @@ data class ErrorContext(
         return base
     }
 }
-
-/**
- * Stores the current diagnostics context for structured reporting.
- */
-class ErrorContextStore {
-    @Volatile
-    private var currentContext: ErrorContext = ErrorContext()
-
-    fun get(): ErrorContext = currentContext
-
-    fun update(context: ErrorContext) {
-        currentContext = context
-    }
-
-    suspend fun <T> withContext(context: ErrorContext, block: suspend () -> T): T {
-        val previous = currentContext
-        currentContext = context
-        return try {
-            block()
-        } finally {
-            currentContext = previous
-        }
-    }
-}

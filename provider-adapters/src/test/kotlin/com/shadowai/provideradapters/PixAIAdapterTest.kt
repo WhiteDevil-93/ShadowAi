@@ -108,8 +108,9 @@ class PixAIAdapterTest {
         )
 
         assertTrue(result.isSuccess)
-        val pixaiResult = result.getOrNull() as PixAIAdapter.PixAIImageResult
-        assertEquals("https://example.com/pixai-anime.png", pixaiResult.imageUrl)
+        val pixaiResult = result.getOrNull() as? PixAIAdapter.PixAIImageResult
+        assertNotNull(pixaiResult)
+        assertEquals("https://example.com/pixai-anime.png", pixaiResult?.imageUrl)
 
         // Check submission
         val request1 = mockWebServer.takeRequest()

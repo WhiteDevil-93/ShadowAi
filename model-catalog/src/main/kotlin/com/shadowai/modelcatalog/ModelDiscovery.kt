@@ -12,7 +12,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Discovers available AI models from local storage and JSON configurations.
@@ -23,7 +22,7 @@ class ModelDiscovery(
     private val gson: Gson
 ) {
     private val scanMutex = Mutex()
-    private val nextModelId = AtomicLong(0)
+    // M-1 FIX: Removed AtomicLong increment - using hash-only ID generation for deterministic IDs
 
     suspend fun discoverFromAllSources(
         localModelDirs: List<String> = getDefaultLocalModelDirs(),
@@ -96,9 +95,20 @@ class ModelDiscovery(
                 providerId = ProviderId.LOCAL_TEXT,
                 capabilities = config.capabilities.map { Capability.valueOf(it) }.toSet(),
                 supportedTransforms = config.supportedTransforms.mapNotNull { name ->
-                    Transform::class.sealedSubclasses.find { cls ->
-                        cls.simpleName == name
-                    }?.objectInstance
+                    // M-5 FIX: Explicit when statement replacing reflection
+                    when (name) {
+                        "TextToText" -> Transform.TextToText()
+                        "TextToImage" -> Transform.TextToImage()
+                        "ImageToText" -> Transform.ImageToText()
+                        "ImageToImage" -> Transform.ImageToImage()
+                        "AudioToText" -> Transform.AudioToText()
+                        "TextToAudio" -> Transform.TextToAudio()
+                        "TextToVideo" -> Transform.TextToVideo()
+                        "VideoToText" -> Transform.VideoToText()
+                        "TextToEmbeddings" -> Transform.TextToEmbeddings()
+                        "EmbeddingsToText" -> Transform.EmbeddingsToText()
+                        else -> null
+                    }
                 }.toSet(),
                 metadata = mapOf(
                     "modelPath" to (file.parentFile?.absolutePath ?: ""),
@@ -110,9 +120,16 @@ class ModelDiscovery(
         }
     }
 
+    /**
+     * M-1 FIX: Generate deterministic model ID using hash only.
+     * Removed increment counter to ensure consistent IDs across rescans.
+     */
     private fun generateModelId(path: String, name: String): String {
-        val hash = (path.hashCode().toLong() shl 32) or name.hashCode().toLong()
-        return "model_${hash}_${nextModelId.getAndIncrement()}"
+        val pathHash = path.hashCode().toLong()
+        val nameHash = name.hashCode().toLong()
+        // Combine hashes deterministically - no increment for consistent IDs
+        val combinedHash = (pathHash * 31L) + nameHash
+        return "model_${combinedHash.toULong().toString(16)}"
     }
 
     private fun createModelDescriptorFromFile(file: File): ModelDescriptor {
@@ -208,6 +225,11 @@ class ModelDiscovery(
         val supportedTransforms: List<String>,
         val metadata: Map<String, Any>?
     ) {
+        /**
+         * M-5 FIX: Replace reflection-based discovery with explicit when statement.
+         * This eliminates the use of Transform::class.sealedSubclasses reflection
+         * and provides explicit, type-safe transform mapping.
+         */
         fun toModelDescriptor(): ModelDescriptor {
             return ModelDescriptor(
                 id = id,
@@ -215,9 +237,20 @@ class ModelDiscovery(
                 providerId = ProviderId.valueOf(providerId),
                 capabilities = capabilities.map { Capability.valueOf(it) }.toSet(),
                 supportedTransforms = supportedTransforms.mapNotNull { name ->
-                    Transform::class.sealedSubclasses.find { cls ->
-                        cls.simpleName == name
-                    }?.objectInstance
+                    // Explicit when statement replacing reflection
+                    when (name) {
+                        "TextToText" -> Transform.TextToText()
+                        "TextToImage" -> Transform.TextToImage()
+                        "ImageToText" -> Transform.ImageToText()
+                        "ImageToImage" -> Transform.ImageToImage()
+                        "AudioToText" -> Transform.AudioToText()
+                        "TextToAudio" -> Transform.TextToAudio()
+                        "TextToVideo" -> Transform.TextToVideo()
+                        "VideoToText" -> Transform.VideoToText()
+                        "TextToEmbeddings" -> Transform.TextToEmbeddings()
+                        "EmbeddingsToText" -> Transform.EmbeddingsToText()
+                        else -> null
+                    }
                 }.toSet(),
                 metadata = metadata ?: emptyMap()
             )

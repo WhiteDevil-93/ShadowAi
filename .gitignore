@@ -22,7 +22,12 @@ app/google-services.json
 # Sensitive files
 keystore.properties
 release.keystore
+*.keystore
 *.jks
+
+# Build directories
+/build
+/app/build
 
 # Environment files (contain API keys)
 .env
@@ -56,3 +61,11 @@ git-error-*
 
 # Large binaries that should use Gradle plugin instead
 ktlint.jar
+
+# Large native build artifacts
+archive/cxx_old_tmp/
+archive/cxx_tmp/
+*.a
+
+# Clangd cache
+app/src/main/cpp/.cache/

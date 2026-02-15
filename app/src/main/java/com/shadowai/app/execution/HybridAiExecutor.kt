@@ -1,13 +1,17 @@
 package com.shadowai.app.execution
 
-import com.shadowai.app.ai.LocalBrainManager
+import android.util.Log
 import com.shadowai.app.ai.PromptManager
 import com.shadowai.app.admin.implementation.AdminRepository
 import com.shadowai.app.ai.MemoryManager
 import com.shadowai.app.providers.AdapterBridge
+import com.shadowai.app.providers.ProviderSelector
+import com.shadowai.app.security.ApiKeyRedaction
 import com.shadowai.core.Artifact
 import com.shadowai.core.Modality
 import com.shadowai.core.Transform
+import com.shadowai.core.toDisplayString
+import com.shadowai.core.mapFailure
 import com.shadowai.pipelineplanner.PipelinePlanner
 import com.google.gson.Gson
 import com.shadowai.app.tasks.Task
@@ -19,20 +23,17 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
+import javax.inject.Singleton
 import java.util.Locale
 import com.shadowai.pipelineplanner.PipelineExecutor
 import com.shadowai.core.ProviderExecutor
 
 /**
  * Phase 7: Multi-Agent Coordinator (Planner / Critic / Executor)
- * Refactored to use:
- * - Unified Provider Adapter architecture (Phase 2)
- * - Normalized Artifact System (Phase 3)
- * - Pipeline Planner for multimodal transformations (Phase 4)
- * - PII Masking for incoming/outgoing data (Phase 1 Security)
  */
+@Singleton
 class HybridAiExecutor @Inject constructor(
-    private val brainManager: LocalBrainManager,
+    private val providerSelector: ProviderSelector,
     private val adminRepo: AdminRepository,
     private val memoryManager: MemoryManager,
     private val promptManager: PromptManager,
@@ -54,15 +55,13 @@ class HybridAiExecutor @Inject constructor(
         memoryManager.learnFromInput(task.input)
         val genSettings = adminRepo.getGenerationSettings()
 
-        // 1. FAST PATH: Rule-based heuristic parsing
         if (task.type == TaskType.DEVICE_CONTROL) {
             heuristicParser.parseToCommand(task.input)?.let {
-                android.util.Log.d(TAG, "Heuristic match found for task: ${task.input}")
+                Log.d(TAG, "Heuristic match found for task: ${task.input}")
                 return it
             }
         }
 
-        // 2. MODALITY PATH: Multi-step pipeline planning (for non-text generative tasks)
         val targetModality = when (task.type) {
             TaskType.IMAGE_GEN -> Modality.Image
             TaskType.VIDEO_GEN -> Modality.Video
@@ -72,31 +71,25 @@ class HybridAiExecutor @Inject constructor(
 
         if (targetModality != Modality.Text) {
             val output = executeMultimodalPipeline(task, targetModality)
-            // Mask PII in the output URI if any (unlikely for paths, but safe to check)
             return piiMaskingProcessor.maskPii(output)
         }
 
-        // 3. AGENTIC PATH: Planner/Critic loop for complex text tasks
         val isCreative = task.type == TaskType.WRITING || task.type == TaskType.VOCAL
 
-        // TURN 1: STRATEGIC PLANNING
         val plannerMessages = if (isCreative) {
             promptManager.buildCreativePlannerMessages(task, genSettings)
         } else {
             promptManager.buildPlannerMessages(task, genSettings)
         }
-        var planAttempt = callAdapter(plannerMessages, genSettings)
+        var planAttempt = callAdapter(plannerMessages, genSettings, task.type)
 
-        // TURN 2: CRITICAL REVIEW (Agentic Governance)
         val criticMessages = promptManager.buildCriticMessages(planAttempt, genSettings)
-        val critique = callAdapter(criticMessages, genSettings)
+        val critique = callAdapter(criticMessages, genSettings, task.type)
 
-        // Structured parsing for governance logic
         val critiqueResult = parseCritiqueResult(critique)
         when (critiqueResult.status) {
             CritiqueStatus.APPROVED -> return planAttempt
             CritiqueStatus.REJECTED -> {
-                // TURN 3: ADVERSARIAL REPAIR
                 val repairHint = "Your previous output was REJECTED by the Security/Quality Critic with these reasons:\n${critiqueResult.reasons}\n\nPlease re-generate with these corrections."
                 val repairPlannerMessages = (if (isCreative) {
                     promptManager.buildCreativePlannerMessages(task, genSettings)
@@ -107,17 +100,16 @@ class HybridAiExecutor @Inject constructor(
                     com.shadowai.core.Message.user(repairHint)
                 )
 
-                var repairedPlan = callAdapter(repairPlannerMessages, genSettings)
+                var repairedPlan = callAdapter(repairPlannerMessages, genSettings, task.type)
 
-                // TURN 4: FINAL SAFETY VALIDATION
                 val finalCriticMessages = promptManager.buildCriticMessages(repairedPlan, genSettings)
-                val finalCritique = callAdapter(finalCriticMessages, genSettings)
+                val finalCritique = callAdapter(finalCriticMessages, genSettings, task.type)
 
                 val finalCritiqueResult = parseCritiqueResult(finalCritique)
                 if (finalCritiqueResult.status == CritiqueStatus.APPROVED) {
                     return repairedPlan
                 } else {
-                    android.util.Log.e(TAG, "SECURITY/QUALITY HALT: Governance rejected output after repair. Final critique: $finalCritique")
+                    Log.e(TAG, "SECURITY/QUALITY HALT: Governance rejected output after repair. Final critique: $finalCritique")
                     return if (isCreative) {
                         "Workflow blocked: The generative output failed quality/safety standards. Reason: ${finalCritiqueResult.reasons}"
                     } else {
@@ -126,61 +118,41 @@ class HybridAiExecutor @Inject constructor(
                 }
             }
             CritiqueStatus.REVIEW_NEEDED -> {
-                android.util.Log.w(TAG, "Unknown critique status, treating as review needed: $critique")
+                Log.w(TAG, "Unknown critique status, treating as review needed: $critique")
                 return planAttempt
             }
         }
     }
 
-    /**
-     * Executes a multimodal request by finding and executing an optimal pipeline.
-     */
-    /**
-     * Executes a multimodal request by finding and executing an optimal pipeline.
-     */
     private suspend fun executeMultimodalPipeline(task: Task, targetModality: Modality): String {
         val plan = pipelinePlanner.planPipeline(Modality.Text, targetModality)
             ?: throw IllegalStateException(
                 "No transformation path available from ${Modality.Text.getDisplayName()} to ${targetModality.getDisplayName()}"
             )
 
-        // Convert Plan to Config
         val builder = com.shadowai.pipelineplanner.PipelineBuilder()
             .named("Task-${task.id}")
             .withDescription("Auto-generated pipeline for ${task.type}")
-        
+
         plan.transforms.forEach { transform ->
             builder.transform(transform)
         }
         val config = builder.build()
 
-        // Create Executor Source that bridges to our Adapter system (using injected source)
-        // No anonymous class needed anymore
-
-
-        // Prepare Input Artifact
         val inputArtifact = Artifact.Text.create(content = task.input)
 
-        // Execute Pipeline
         val result = pipelineExecutor.execute(
             config = config,
             input = inputArtifact,
             executor = executorSource,
-            parameters = emptyMap() // Pass global params if needed
+            parameters = emptyMap()
         )
 
-        return result.mapCatching { artifact ->
-            // Convert final artifact to string representation
-            when (artifact) {
-                is Artifact.Text -> artifact.content
-                is Artifact.Image -> artifact.uri.toString()
-                is Artifact.Audio -> artifact.uri.toString()
-                is Artifact.Video -> artifact.uri.toString()
-                is Artifact.Json -> artifact.jsonString
-                is Artifact.Binary -> java.util.Base64.getEncoder().encodeToString(artifact.data)
-                is Artifact.Empty -> ""
-                is Artifact.Error -> throw IllegalStateException(artifact.message)
-            }
+        return result.mapCatching { artifact: Artifact ->
+            artifact.toDisplayString()
+        }.mapFailure { error: Throwable ->
+            val apiKeyRedaction = ApiKeyRedaction()
+            apiKeyRedaction.redactThrowable(error)
         }.getOrThrow()
     }
 
@@ -188,18 +160,17 @@ class HybridAiExecutor @Inject constructor(
         val genSettings = adminRepo.getGenerationSettings()
         val repairHint = "Invalid Output:\n$badOutput\n\nValidation Error:\n$errorHint"
         val messages = promptManager.buildDeviceControlMessages(task, genSettings, repairHint)
-        return callAdapter(messages, genSettings)
+        return callAdapter(messages, genSettings, task.type)
     }
 
-    /**
-     * Unified API call through the Provider Adapter architecture using Normalized Artifacts.
-     */
     private suspend fun callAdapter(
         messages: List<com.shadowai.core.Message>,
-        genSettings: com.shadowai.app.admin.GenerationSettings
+        genSettings: com.shadowai.app.admin.GenerationSettings,
+        taskType: TaskType
     ): String {
-        val activeConfig = brainManager.getActiveConfig()
-            ?: throw IllegalStateException("No active AI provider configured")
+        val activeConfig = providerSelector.getActiveConfig()
+            ?: providerSelector.nextForTask(taskType)
+            ?: throw IllegalStateException("No active AI provider configured for $taskType")
 
         val prompt = messages.joinToString("\n") { "${it.role}: ${it.content}" }
         val inputArtifact = Artifact.Text.create(content = prompt)
@@ -223,13 +194,15 @@ class HybridAiExecutor @Inject constructor(
         )
 
         return if (result.isSuccess) {
-            val response = result.getOrThrow() as String
-            // CRITICAL: Mask PII in incoming AI response
+            val responseArtifact = result.getOrThrow()
+            val response = responseArtifact.toDisplayString()
             piiMaskingProcessor.maskPii(response)
         } else {
             val error = result.exceptionOrNull() ?: Exception("Unknown adapter error")
-            android.util.Log.e(TAG, "Adapter execution failed: ${error.message}", error)
-            throw error
+            Log.e(TAG, "Adapter execution failed: ${error.message}", error)
+            val apiKeyRedaction = ApiKeyRedaction()
+            val redactedError = apiKeyRedaction.redactThrowable(error)
+            throw redactedError
         }
     }
 

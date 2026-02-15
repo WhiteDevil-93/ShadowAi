@@ -1,5 +1,7 @@
 package com.shadowai.app.exceptions
 
+import java.io.IOException
+
 /**
  * Exception thrown when certificate pinning validation fails.
  *
@@ -12,6 +14,9 @@ package com.shadowai.app.exceptions
  * - Malicious CA installed on the device
  * - Incorrect pin configuration
  *
+ * M-9 FIXED: Extends IOException instead of SecurityException to comply with
+ * OkHttp Interceptor interface (which declares 'throws IOException').
+ *
  * @param hostname The hostname that failed pinning validation
  * @param message Detailed error message
  * @param cause The underlying SSL exception
@@ -20,7 +25,7 @@ class CertificatePinningException(
     val hostname: String,
     message: String,
     cause: Throwable? = null
-) : SecurityException(message, cause) {
+) : IOException(message, cause) {
 
     companion object {
         private const val serialVersionUID = 1L

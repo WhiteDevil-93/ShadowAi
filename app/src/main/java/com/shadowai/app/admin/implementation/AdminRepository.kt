@@ -257,6 +257,13 @@ class AdminRepository @Inject constructor(
     }
 
     override suspend fun saveGenerationSettings(settings: GenerationSettings) = withContext(Dispatchers.IO) {
+        // M-13: Validate settings bounds before saving
+        val validationResult = settings.validate()
+        if (!validationResult.isValid) {
+            val errors = (validationResult as GenerationSettings.ValidationResult.Invalid).errors
+            throw IllegalArgumentException("Invalid generation settings: ${errors.joinToString(", ")}")
+        }
+        
         settingsMutex.withLock {
             _cachedGenerationSettings = settings
             settingsShard.batcher.schedule {

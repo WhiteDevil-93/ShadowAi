@@ -4,9 +4,23 @@ import com.shadowai.core.ProviderId
 
 enum class AuthType { API_KEY, OAUTH, NONE }
 
-enum class Capability { TEXT, VISION, IMAGE_GEN, FUNCTION_CALLS, VOICE }
+enum class ApiStyle {
+    OPENAI,
+    ANTHROPIC,
+    LOCAL_TEXT,
+    LOCAL_IMAGE,
+    NOVELAI,
+    NOVITA,
+    NOVITA_IMAGE,
+    PIXAI,
+    GEMINI,
+    OPENAI_COMPAT,
+    BEDROCK,
+    LIQUID,
+    OLLAMA
+}
 
-enum class ApiStyle { OPENAI, ANTHROPIC, LOCAL_TEXT, LOCAL_IMAGE, NOVELAI, NOVITA, NOVITA_IMAGE, PIXAI, GEMINI, OPENAI_COMPAT, BEDROCK, LIQUID, OLLAMA }
+enum class Capability { TEXT, VISION, IMAGE_GEN, FUNCTION_CALLS, VOICE }
 
 data class ProviderAuth(
     val type: AuthType = AuthType.API_KEY,

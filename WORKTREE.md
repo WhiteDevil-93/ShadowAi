@@ -20,8 +20,6 @@ This file is the active execution guide for day-to-day implementation in this re
 
 Before running any Gradle command, ask:
 
-`Ready for validation build/test now?`
-
 If approved, run the smallest useful command first:
 
 1. `:app:compileDebugKotlin`

@@ -27,11 +27,11 @@ class NativeBridge {
         private fun loadNativeLibrary() {
             if (!isLibraryLoaded.get()) {
                 try {
-                    System.loadLibrary("llama_jni")
+                    System.loadLibrary("llama_jni_iso")
                     isLibraryLoaded.set(true)
-                    Log.i(TAG, "Native library 'llama_jni' loaded successfully.")
+                    Log.i(TAG, "Native library 'llama_jni_iso' loaded successfully.")
                 } catch (e: UnsatisfiedLinkError) {
-                    Log.e(TAG, "Failed to load native library 'llama_jni': ${e.message}")
+                    Log.e(TAG, "Failed to load native library 'llama_jni_iso': ${e.message}")
                     isLibraryLoaded.set(false)
                 } catch (e: Exception) {
                     Log.e(TAG, "Unexpected error loading native library: ${e.message}")

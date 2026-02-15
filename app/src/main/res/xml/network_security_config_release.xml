@@ -1,14 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Legacy compatibility copy; keep aligned with release network security policy. -->
-<network-security-config>
+<!-- Legacy compatibility copy kept aligned with release security policy. -->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
         <domain>127.0.0.1</domain>
-        <domain>10.0.2.2</domain>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain>api.openai.com</domain>
+        <pin-set expiration="2030-01-01" tools:ignore="MissingBackupPin">
+            <pin digest="SHA-256">y5npFVdBuoqCSOdQa42qiUSPqwMpoei7NK0rQWGUaSU=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain>api.anthropic.com</domain>
+        <pin-set expiration="2030-01-01" tools:ignore="MissingBackupPin">
+            <pin digest="SHA-256">60QDDZy98CjK1XTBTlPbInyzJzi+817KvW+usCk6r+o=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain>generativelanguage.googleapis.com</domain>
+        <pin-set expiration="2030-01-01" tools:ignore="MissingBackupPin">
+            <pin digest="SHA-256">beMAm4GYDucmQKh+VCUDnjnyi6/lYbL8AGn0xzLxwdQ=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain>openrouter.ai</domain>
+        <pin-set expiration="2030-01-01" tools:ignore="MissingBackupPin">
+            <pin digest="SHA-256">2ETytvFJ0SYiiaUyT3xMrJ3Yuen/K58SNiB87YChuRg=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain>api.deepseek.com</domain>
+        <pin-set expiration="2030-01-01" tools:ignore="MissingBackupPin">
+            <pin digest="SHA-256">DR0Gpd4Pbm6uwcjbOXvXkJ+RpBGTI0Fk3zXyJFx7tIc=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain>api.mistral.ai</domain>
+        <pin-set expiration="2030-01-01" tools:ignore="MissingBackupPin">
+            <pin digest="SHA-256">WIL7Gb0Z+W0RVwIfIOJhj7MF02UNEWTAC+EaAyu9MFI=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain>api.groq.com</domain>
+        <pin-set expiration="2030-01-01" tools:ignore="MissingBackupPin">
+            <pin digest="SHA-256">d4+HJjLne/sZOYjO+ObMgq4Wzv3hKzBFi7hrv+Gqmt0=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain>api.x.ai</domain>
+        <pin-set expiration="2030-01-01" tools:ignore="MissingBackupPin">
+            <pin digest="SHA-256">goZa6+Wl5S9dLXkybh6d6cyFp6APuKnUTbOLvHjKvBs=</pin>
+        </pin-set>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
     </domain-config>
 </network-security-config>

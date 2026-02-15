@@ -3,9 +3,15 @@ package com.shadowai.provideradapters
 import android.util.Log
 import com.shadowai.core.LocalGenerationConfig
 import com.shadowai.core.LocalInferenceEngine
+import com.shadowai.core.LocalModelHandle
 import com.shadowai.core.ProviderId
 import com.shadowai.core.Transform
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -23,7 +29,8 @@ import javax.inject.Inject
  * - Inference execution
  * - Model unloading (to free memory)
  *
- * No manual [loadModel()] calls required.
+ * H-9 FIX: Caches loaded model handle to support chat sessions.
+ * Model is unloaded only when shutdown() is called (on eviction or app close).
  */
 class LocalLlamaAdapter @Inject constructor(
     override val config: ProviderAdapterConfig,
@@ -37,6 +44,11 @@ class LocalLlamaAdapter @Inject constructor(
     }
 
     private var isInitialized = false
+
+    // H-9 FIX: Cache the loaded model handle
+    private var activeModel: LocalModelHandle? = null
+    private val modelLock = Mutex()
+    private val adapterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override val providerId: ProviderId = config.providerId
 
@@ -91,6 +103,26 @@ class LocalLlamaAdapter @Inject constructor(
         return isInitialized
     }
 
+    // H-8 FIX: Cleanup resources on shutdown
+    override fun shutdown() {
+        try {
+            val model = activeModel
+            if (model != null) {
+                // Fire-and-forget cleanup on a dedicated adapter scope.
+                adapterScope.launch {
+                    try {
+                        inferenceEngine?.unloadModel(model)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to unload model during background shutdown", e)
+                    }
+                }
+                activeModel = null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during shutdown", e)
+        }
+    }
+
     override suspend fun canExecute(transform: Transform): Boolean {
         return when (transform) {
             is Transform.TextToText -> true
@@ -133,7 +165,7 @@ class LocalLlamaAdapter @Inject constructor(
 
     /**
      * Execute TextToText transform with automatic model load/unload.
-     * Model is always unloaded after execution (success or failure) to free memory.
+     * H-9 FIX: Caches loaded model handle instead of unloading immediately.
      */
     private suspend fun executeTextToText(
         input: Any,
@@ -174,19 +206,28 @@ class LocalLlamaAdapter @Inject constructor(
 
         Log.d(TAG, "Executing TextToText: prompt=${prompt.take(50)}..., maxTokens=$maxTokens, temp=$temperature")
 
-        // Use the LocalInferenceEngine interface for proper DI-based model loading and generation
-        val model = try {
-            val genConfig = LocalGenerationConfig(
-                maxTokens = maxTokens,
-                temp = temperature.toFloat()
-            )
-            engine.loadModel(config.baseUrl, genConfig)
-                ?: return@withContext Result.failure(
-                    IllegalStateException("Failed to load model: ${config.baseUrl}")
-                )
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load model: ${config.baseUrl}", e)
-            return@withContext Result.failure(e)
+        // Use cached model or load new one
+        val model = modelLock.withLock {
+            var handle = activeModel
+            if (handle == null || !handle.isValid()) {
+                try {
+                    val genConfig = LocalGenerationConfig(
+                        maxTokens = maxTokens,
+                        temp = temperature.toFloat()
+                    )
+                    handle = engine.loadModel(config.baseUrl, genConfig)
+                    if (handle == null) {
+                         return@withContext Result.failure(
+                            IllegalStateException("Failed to load model: ${config.baseUrl}")
+                        )
+                    }
+                    activeModel = handle
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to load model: ${config.baseUrl}", e)
+                    return@withContext Result.failure(e)
+                }
+            }
+            handle
         }
 
         return@withContext try {
@@ -207,15 +248,8 @@ class LocalLlamaAdapter @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Generation failed", e)
             Result.failure(e)
-        } finally {
-            // Always unload model to free memory
-            try {
-                engine.unloadModel(model)
-                Log.d(TAG, "Model unloaded successfully")
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to unload model (may already be unloaded)", e)
-            }
         }
+        // H-9 FIX: Removed finally block that unloaded model. Model stays loaded until shutdown().
     }
 
     override fun getPriority(transform: Transform): Int {
@@ -226,16 +260,48 @@ class LocalLlamaAdapter @Inject constructor(
     }
 
     /**
-     * Estimates VRAM requirement for a model file.
+     * Estimates VRAM requirement for a model file with optional context window and batch size factors.
+     *
+     * VRAM calculation:
+     * - Base model size: fileSizeBytes * VRAM_MULTIPLIER (for weights and overhead)
+     * - Context window factor: nCtx * bytes_per_token * model_size_factor
+     * - Batch size factor: batch_size * additional_buffer_per_batch
+     *
+     * @param fileSizeBytes Size of the model file in bytes
+     * @param nCtx Context window size (default: 2048). Larger context requires more VRAM.
+     * @param batchSize Batch size for generation (default: 1). Larger batches require more VRAM.
+     * @return Estimated VRAM required in MB
+     */
+    fun estimateVramRequirement(
+        fileSizeBytes: Long,
+        nCtx: Int = 2048,
+        batchSize: Int = 1
+    ): Int {
+        val sizeMB = fileSizeBytes / (1024 * 1024)
+
+        // Base VRAM for model weights and overhead
+        val baseVramMB = (sizeMB * VRAM_MULTIPLIER).toInt()
+
+        // Context window VRAM: nCtx * 2 bytes per token * 2x factor for activation buffers
+        // This accounts for KV cache and intermediate activations
+        val contextVramMB = (nCtx * 2L * 2) / (1024 * 1024)
+
+        // Batch size VRAM: additional buffer for each batch
+        // Each batch requires activation memory proportional to context size
+        val batchVramMB = (batchSize * nCtx * 2L) / (1024 * 1024)
+
+        return baseVramMB + contextVramMB.toInt() + batchVramMB.toInt()
+    }
+
+    /**
+     * Estimates VRAM requirement for a model file using the configured context size.
      *
      * @param fileSizeBytes Size of the model file in bytes
      * @return Estimated VRAM required in MB
-     *
-     * Rough estimate: VRAM ≈ model size in GB * 1.2 for overhead
      */
     fun estimateVramRequirement(fileSizeBytes: Long): Int {
-        val sizeMB = fileSizeBytes / (1024 * 1024)
-        return (sizeMB * VRAM_MULTIPLIER).toInt()
+        // Use default context size (2048) from GenerationConfig
+        return estimateVramRequirement(fileSizeBytes, nCtx = 2048, batchSize = 1)
     }
 
     /**

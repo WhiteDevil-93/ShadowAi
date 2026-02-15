@@ -325,11 +325,16 @@ class OllamaCloudAdapter(
         }
     }
 
+    /**
+     * M-2 FIX: Preserve original exception context in error mapping.
+     * The original exception is now passed as the cause for better debugging.
+     */
     private fun mapToDomainError(e: Exception): OllamaCloudException {
         return when (e) {
             is IOException -> OllamaCloudException.NetworkError(e)
             is OllamaCloudException -> e
-            else -> OllamaCloudException.UnknownError(-1, e.message)
+            // M-2 FIX: Pass original exception as cause instead of just message
+            else -> OllamaCloudException.UnknownError(-1, e.message, cause = e)
         }
     }
 
@@ -476,9 +481,11 @@ class OllamaCloudAdapter(
         class UnknownError(
             code: Int,
             message: String?,
-            apiErrorCode: String? = null
+            apiErrorCode: String? = null,
+            cause: Throwable? = null
         ) : OllamaCloudException(
             message = "Unknown error (HTTP $code): ${message ?: "No details"}",
+            cause = cause,
             errorCode = apiErrorCode
         )
     }

@@ -62,6 +62,7 @@ data class RetryPolicy(
         
         /**
          * Network-specific retry: Only retry on network errors.
+         * M-3: Including HTTP 408 (Request Timeout) in retry conditions.
          */
         val NETWORK_ONLY = RetryPolicy(
             maxRetries = 3,
@@ -70,13 +71,45 @@ data class RetryPolicy(
                 val message = e.message?.lowercase() ?: ""
                 val className = e.javaClass.simpleName.lowercase()
                 
-                className.contains("socket") ||
-                className.contains("connect") ||
-                className.contains("timeout") ||
-                message.contains("network") ||
-                message.contains("connection") ||
-                message.contains("timeout") ||
-                message.contains("unreachable")
+                val isNetworkError = className.contains("socket") ||
+                    className.contains("connect") ||
+                    className.contains("timeout") ||
+                    message.contains("network") ||
+                    message.contains("connection") ||
+                    message.contains("timeout") ||
+                    message.contains("unreachable")
+                
+                // M-3: Check for HTTP 408 (Request Timeout) in message
+                val isHttp408 = message.contains("408") ||
+                    message.contains("request timeout")
+                
+                // M-3: Check for other retryable HTTP status codes
+                val isRetryableHttpCode = message.contains("429") ||  // Rate limited
+                    message.contains("503") ||  // Service unavailable
+                    message.contains("502") ||  // Bad gateway
+                    message.contains("504")    // Gateway timeout
+                
+                isNetworkError || isHttp408 || isRetryableHttpCode
+            }
+        )
+        
+        /**
+         * M-3: HTTP-specific retry policy - specifically handles HTTP 408 and other retryable codes.
+         */
+        val HTTP_RETRYABLE = RetryPolicy(
+            maxRetries = 3,
+            baseDelayMs = 2000,
+            maxDelayMs = 30000,
+            retryOn = { e ->
+                val message = e.message?.lowercase() ?: ""
+                
+                // HTTP status codes that are safe to retry
+                val retryableCodes = listOf(408, 429, 500, 502, 503, 504)
+                
+                retryableCodes.any { code ->
+                    message.contains(code.toString()) ||
+                    message.contains("http $code")
+                } || message.contains("timeout") || message.contains("rate limit")
             }
         )
         

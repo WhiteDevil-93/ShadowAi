@@ -11,8 +11,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.math.roundToLong
+import kotlin.random.Random
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -63,25 +68,8 @@ class GeminiAdapter(
     }
 
     override suspend fun isAvailable(): Boolean = withContext(Dispatchers.IO) {
-        if (!isInitialized) {
-            return@withContext false
-        }
-        try {
-            // Test with a simple models list request
-            val apiKeySecret = config.apiKeySecret ?: return@withContext false
-            val apiKey = apiKeySecret.withSecretBytes { String(it, Charsets.UTF_8) }
-            val request = Request.Builder()
-                .url("${getBaseUrl()}/v1beta/models?key=$apiKey")
-                .header("x-goog-api-key", apiKey)
-                .get()
-                .build()
-
-            val response = withRetry { httpClient.newCall(request).execute() }
-            response.use { it.isSuccessful }
-        } catch (e: Exception) {
-            Log.w(TAG, "Availability check failed", e)
-            false
-        }
+        // H-10 FIX: Lightweight check
+        return@withContext isInitialized
     }
 
     override suspend fun canExecute(transform: Transform): Boolean {
@@ -134,6 +122,10 @@ class GeminiAdapter(
     /**
      * Execute a streaming text generation request.
      * Returns a Flow of partial text responses.
+     *
+     * H-15: Proper resource cleanup with Call cancellation on flow cancellation.
+     * H-16-H-17: Consistent streaming timeouts.
+     * M-16: Added bounded buffer for backpressure handling to prevent overwhelming downstream collectors.
      */
     fun executeStreaming(
         prompt: String,
@@ -163,52 +155,69 @@ class GeminiAdapter(
             generationConfig = generationConfig
         )
 
-            val apiKeySecret = config.apiKeySecret
-                ?: throw GeminiException.AuthenticationError()
-            val apiKey = apiKeySecret.withSecretBytes { String(it, Charsets.UTF_8) }
+        val apiKeySecret = config.apiKeySecret
+            ?: throw GeminiException.AuthenticationError()
+        val apiKey = apiKeySecret.withSecretBytes { bytes -> String(bytes, Charsets.UTF_8) }
 
-            val request = Request.Builder()
-                .url("${getBaseUrl()}/v1beta/models/$modelId:streamGenerateContent?key=$apiKey")
-                .header("x-goog-api-key", apiKey)
-                .header("Content-Type", "application/json")
-                .post(gson.toJson(requestBody).toRequestBody("application/json".toMediaType()))
-                .build()
+        val request = Request.Builder()
+            .url("${getBaseUrl()}/v1beta/models/$modelId:streamGenerateContent?key=$apiKey")
+            .header("x-goog-api-key", apiKey)
+            .header("Content-Type", "application/json")
+            .post(gson.toJson(requestBody).toRequestBody("application/json".toMediaType()))
+            .build()
 
         val client = httpClient.newBuilder()
             .readTimeout(STREAM_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .build()
 
-        val response = withRetry { client.newCall(request).execute() }
+        // H-15: Create call for cancellation support
+        val call = client.newCall(request)
 
-        if (!response.isSuccessful) {
-            val errorBody = response.body?.string()
-            val error = parseErrorResponse(response.code, errorBody)
-            throw error
-        }
+        try {
+            val response = withRetry { call.execute() }
 
-        response.body?.byteStream()?.use { stream ->
-            stream.bufferedReader().useLines { lines ->
-                lines.forEach { line ->
-                    if (line.isBlank()) return@useLines
-                    if (!line.startsWith("data: ")) return@forEach
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string()
+                val error = parseErrorResponse(response.code, errorBody)
+                throw error
+            }
 
-                    val data = line.substring(6)
-                    try {
-                        val chunk = gson.fromJson(data, GeminiStreamChunk::class.java)
-                        val text = chunk.candidates?.firstOrNull()
-                            ?.content?.parts?.firstOrNull()
-                            ?.text
-                        if (!text.isNullOrEmpty()) {
-                            emit(StreamingResponse.Chunk(text))
+            // H-15: Use try-finally to ensure response is closed
+            response.use { resp ->
+                resp.body?.byteStream()?.use { stream ->
+                    stream.bufferedReader().useLines { lines ->
+                        lines.forEach { line ->
+                            // Check if flow was cancelled
+                            if (!currentCoroutineContext().isActive) return@useLines
+                            if (line.isBlank()) return@forEach
+                            if (!line.startsWith("data: ")) return@forEach
+
+                            val data = line.substring(6)
+                            try {
+                                val chunk = gson.fromJson(data, GeminiStreamChunk::class.java)
+                                val text = chunk.candidates?.firstOrNull()
+                                    ?.content?.parts?.firstOrNull()
+                                    ?.text
+                                if (!text.isNullOrEmpty()) {
+                                    emit(StreamingResponse.Chunk(text))
+                                }
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to parse chunk: $data", e)
+                            }
                         }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Failed to parse chunk: $data", e)
+                        emit(StreamingResponse.Done)
                     }
                 }
-                emit(StreamingResponse.Done)
             }
+        } catch (e: Exception) {
+            // H-15: Cancel call on any exception (including cancellation)
+            if (call.isExecuted() && !call.isCanceled()) {
+                call.cancel()
+            }
+            throw e
         }
-    }.flowOn(Dispatchers.IO)
+    }.buffer(64) // M-16: Bounded buffer for backpressure with reasonable capacity
+      .flowOn(Dispatchers.IO)
 
     private suspend fun executeTextGeneration(
         prompt: String,
@@ -470,11 +479,16 @@ class GeminiAdapter(
         }
     }
 
+    /**
+     * M-2 FIX: Preserve original exception context in error mapping.
+     * The original exception is now passed as the cause for better debugging.
+     */
     private fun mapToDomainError(e: Exception): GeminiException {
         return when (e) {
             is IOException -> GeminiException.NetworkError(e)
             is GeminiException -> e
-            else -> GeminiException.UnknownError(-1, e.message)
+            // M-2 FIX: Pass original exception as cause instead of just message
+            else -> GeminiException.UnknownError(-1, e.message, cause = e)
         }
     }
 
@@ -644,14 +658,19 @@ class GeminiAdapter(
             code: Int,
             message: String?,
             apiErrorCode: String? = null,
-            errorStatus: String? = null
+            errorStatus: String? = null,
+            cause: Throwable? = null
         ) : GeminiException(
             message = "Unknown error (HTTP $code): ${message ?: "No details"}",
+            cause = cause,
             errorCode = apiErrorCode,
             errorStatus = errorStatus
         )
     }
 
+    /**
+     * H-21: Retry with 30% jitter to prevent thundering herd.
+     */
     private suspend fun <T> withRetry(
         maxRetries: Int = MAX_RETRIES,
         block: suspend () -> T
@@ -665,8 +684,10 @@ class GeminiAdapter(
             } catch (e: IOException) {
                 lastException = e
                 if (attempt < maxRetries) {
-                    delay(delayMs)
-                    delayMs *= 2
+                    // H-21: Add 30% jitter (was 10%)
+                    val jitter = (delayMs * 0.3 * Random.nextDouble()).roundToLong()
+                    delay(delayMs + jitter)
+                    delayMs = (delayMs * 2).coerceAtMost(60_000L) // Cap at 60s
                 }
             }
         }

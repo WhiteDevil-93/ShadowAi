@@ -1,3 +1,11 @@
+/**
+ * Architecture Decision Records (ADR) References:
+ * - ADR-007: Local Inference Engine Choice - llama.cpp via JNI with process isolation
+ * - ADR-001: Provider Adapter Architecture - Local inference as a provider type
+ *
+ * @see docs/architecture/adr/ADR-007-Local-Inference-Engine-Choice.md
+ * @see docs/architecture/adr/ADR-001-Provider-Adapter-Architecture.md
+ */
 package com.shadowai.app.ai
 
 import android.content.ComponentName

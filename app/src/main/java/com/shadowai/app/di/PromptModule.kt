@@ -2,6 +2,7 @@ package com.shadowai.app.di
 
 import com.shadowai.app.ai.MemoryManager
 import com.shadowai.app.ai.PromptManager
+import com.shadowai.app.ai.TokenCounter
 import com.shadowai.core.security.PiiMaskingProcessor
 import dagger.Module
 import dagger.Provides
@@ -16,8 +17,9 @@ object PromptModule {
     @Singleton
     fun providePromptManager(
         memoryManager: MemoryManager,
-        piiMaskingProcessor: PiiMaskingProcessor
+        piiMaskingProcessor: PiiMaskingProcessor,
+        tokenCounter: TokenCounter
     ): PromptManager {
-        return PromptManager(memoryManager, piiMaskingProcessor)
+        return PromptManager(memoryManager, piiMaskingProcessor, tokenCounter)
     }
 }

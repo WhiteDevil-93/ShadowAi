@@ -6,6 +6,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,7 +41,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class NetworkMonitor @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     companion object {
         private const val TAG = "NetworkMonitor"

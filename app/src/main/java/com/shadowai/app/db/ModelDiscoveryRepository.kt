@@ -4,38 +4,43 @@ import android.content.Context
 import android.util.Log
 import com.shadowai.core.ModelDescriptor
 import com.shadowai.core.ProviderId
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Repository for persisting and restoring model discovery state.
- *
- * This class bridges the model-catalog module's ModelDiscovery with the app module's
- * Room database, enabling persistence of discovered model paths across app restarts.
- *
- * @param context Application context for database access
- * @param database The ShadowDatabase instance
  */
 @Singleton
 class ModelDiscoveryRepository @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val database: ShadowDatabase
 ) {
     private val modelPathDao: ModelPathDao = database.modelPathDao()
 
     companion object {
         private const val TAG = "ModelDiscoveryRepository"
+        private const val THREAD_POOL_SIZE = 4
+        private const val THREAD_KEEP_ALIVE_SECONDS = 30L
     }
 
-    /**
-     * Persist a discovered model to the database.
-     *
-     * @param model The ModelDescriptor to persist
-     * @param path The file path to the model
-     */
+    private val discoveryThreadPool: ThreadPoolExecutor = Executors.newFixedThreadPool(
+        THREAD_POOL_SIZE
+    ) as ThreadPoolExecutor
+
+    init {
+        discoveryThreadPool.setKeepAliveTime(THREAD_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS)
+        discoveryThreadPool.allowCoreThreadTimeOut(true)
+    }
+
     suspend fun persistModel(model: ModelDescriptor, path: String) = withContext(Dispatchers.IO) {
         try {
             val entity = ModelPathEntity(
@@ -51,11 +56,6 @@ class ModelDiscoveryRepository @Inject constructor(
         }
     }
 
-    /**
-     * Persist multiple discovered models to the database.
-     *
-     * @param models List of pairs containing ModelDescriptor and its path
-     */
     suspend fun persistModels(models: List<Pair<ModelDescriptor, String>>) = withContext(Dispatchers.IO) {
         models.forEach { (model, path) ->
             persistModel(model, path)
@@ -63,40 +63,18 @@ class ModelDiscoveryRepository @Inject constructor(
         Log.d(TAG, "Persisted ${models.size} models")
     }
 
-    /**
-     * Get all valid persisted model paths.
-     *
-     * @return List of valid ModelPathEntity entries
-     */
     suspend fun getValidModelPaths(): List<ModelPathEntity> = withContext(Dispatchers.IO) {
         modelPathDao.getValid()
     }
 
-    /**
-     * Get all persisted model paths (including invalid).
-     *
-     * @return List of all ModelPathEntity entries
-     */
     suspend fun getAllModelPaths(): List<ModelPathEntity> = withContext(Dispatchers.IO) {
         modelPathDao.getAll()
     }
 
-    /**
-     * Get a specific model path by its path.
-     *
-     * @param path The file path to look up
-     * @return The ModelPathEntity if found, null otherwise
-     */
     suspend fun getModelPathByPath(path: String): ModelPathEntity? = withContext(Dispatchers.IO) {
         modelPathDao.getByPath(path)
     }
 
-    /**
-     * Mark a model path as invalid.
-     * Called when a file is deleted or becomes inaccessible.
-     *
-     * @param path The file path to invalidate
-     */
     suspend fun invalidateModelPath(path: String) = withContext(Dispatchers.IO) {
         try {
             modelPathDao.setInvalid(path)
@@ -106,12 +84,6 @@ class ModelDiscoveryRepository @Inject constructor(
         }
     }
 
-    /**
-     * Check if a model path is still valid (file exists and is readable).
-     *
-     * @param path The file path to check
-     * @return True if the file exists and is readable
-     */
     suspend fun isPathValid(path: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val file = File(path)
@@ -125,70 +97,113 @@ class ModelDiscoveryRepository @Inject constructor(
         }
     }
 
-    /**
-     * Validate all persisted paths and mark invalid ones.
-     *
-     * @return Number of paths marked as invalid
-     */
     suspend fun validateAndCleanPaths(): Int = withContext(Dispatchers.IO) {
         var invalidCount = 0
         val allPaths = modelPathDao.getAll()
-        
+
         allPaths.forEach { entity ->
             if (!isPathValid(entity.path)) {
                 modelPathDao.setInvalid(entity.path)
                 invalidCount++
             }
         }
-        
+
         Log.d(TAG, "Validated paths: ${allPaths.size} total, $invalidCount marked invalid")
         invalidCount
     }
 
-    /**
-     * Restore models from persisted paths.
-     * Only returns valid paths that still exist on the filesystem.
-     *
-     * @return List of valid file paths
-     */
     suspend fun restoreModelPaths(): List<String> = withContext(Dispatchers.IO) {
         val validPaths = modelPathDao.getValid()
         val existingPaths = validPaths.filter { entity ->
             isPathValid(entity.path).also { isValid ->
                 if (!isValid) {
-                    // Mark as invalid in database since file no longer exists
                     modelPathDao.setInvalid(entity.path)
                 }
             }
         }.map { it.path }
-        
+
         Log.d(TAG, "Restored ${existingPaths.size} model paths from ${validPaths.size} valid entries")
         existingPaths
     }
 
-    /**
-     * Clear all persisted model paths.
-     */
     suspend fun clearAllPaths() = withContext(Dispatchers.IO) {
         modelPathDao.deleteAll()
         Log.d(TAG, "Cleared all model paths")
     }
 
-    /**
-     * Get the count of persisted models.
-     *
-     * @return Total count of model path entries
-     */
     suspend fun getPersistedModelCount(): Int = withContext(Dispatchers.IO) {
         modelPathDao.getCount()
     }
 
-    /**
-     * Get the count of valid persisted models.
-     *
-     * @return Count of valid model path entries
-     */
     suspend fun getValidModelCount(): Int = withContext(Dispatchers.IO) {
         modelPathDao.getValidCount()
+    }
+
+    suspend fun discoverModelsAsync(searchPaths: List<String>): List<String> =
+        withContext(Dispatchers.Default) {
+            val discoveredPaths = mutableListOf<String>()
+            val dispatcher = discoveryThreadPool.asCoroutineDispatcher()
+
+            val jobs = searchPaths.map { path ->
+                // FIX: Use async on current scope (coroutineScope is implicit in withContext)
+                async(dispatcher) {
+                    discoverModelsInPath(path)
+                }
+            }
+
+            jobs.forEach { job ->
+                try {
+                    discoveredPaths.addAll(job.await())
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during async model discovery", e)
+                }
+            }
+
+            Log.d(TAG, "Async discovery complete: ${discoveredPaths.size} models found")
+            discoveredPaths
+        }
+
+    private fun discoverModelsInPath(path: String): List<String> {
+        val models = mutableListOf<String>()
+        try {
+            val dir = File(path)
+            if (!dir.exists() || !dir.isDirectory) {
+                return models
+            }
+
+            dir.listFiles()?.forEach { file ->
+                when {
+                    file.name.endsWith(".gguf", ignoreCase = true) -> {
+                        models.add(file.absolutePath)
+                        Log.d(TAG, "Discovered GGUF model: ${file.name}")
+                    }
+                    file.name.endsWith(".safetensors", ignoreCase = true) -> {
+                        models.add(file.absolutePath)
+                        Log.d(TAG, "Discovered SafeTensors model: ${file.name}")
+                    }
+                    file.name == "model.json" -> {
+                        file.parentFile?.absolutePath?.let { models.add(it) }
+                        Log.d(TAG, "Discovered model configuration: ${file.parent}")
+                    }
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Security exception accessing path: $path")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error discovering models in path: $path", e)
+        }
+        return models
+    }
+
+    fun shutdown() {
+        discoveryThreadPool.shutdown()
+        try {
+            if (!discoveryThreadPool.awaitTermination(5, TimeUnit.SECONDS)) {
+                discoveryThreadPool.shutdownNow()
+            }
+        } catch (e: InterruptedException) {
+            discoveryThreadPool.shutdownNow()
+        }
+        Log.d(TAG, "Discovery thread pool shut down")
     }
 }

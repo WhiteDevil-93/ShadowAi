@@ -1,10 +1,16 @@
 package com.shadowai.app.auth
 
 import android.util.Log
+import com.shadowai.app.security.SecureDataStore
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,40 +23,20 @@ import kotlin.time.toDuration
 
 /**
  * Manages JWT token refresh lifecycle for cloud API providers.
- *
- * Features:
- * - Automatic token refresh before expiration
- * - Background refresh scheduling
- * - Token expiration tracking
- * - Retry logic with exponential backoff
- * - Multiple provider support
- *
- * Usage:
- * ```
- * // Register a token with refresh callback
- * tokenRefreshManager.registerToken(
- *     providerId = "openai",
- *     token = "eyJ...",
- *     expiresInSeconds = 3600,
- *     refreshCallback = { oldToken ->
- *         // Call your auth API to get new token
- *         authApi.refreshToken(oldToken)
- *     }
- * )
- *
- * // Get current valid token
- * val token = tokenRefreshManager.getValidToken("openai")
- * ```
  */
 @Singleton
-class TokenRefreshManager @Inject constructor() {
+class TokenRefreshManager @Inject constructor(
+    private val secureDataStore: SecureDataStore,
+    private val gson: Gson
+) {
 
     private companion object {
         private const val TAG = "TokenRefresh"
-        private const val REFRESH_BUFFER_MINUTES = 5L // Refresh 5 minutes before expiry
-        private const val MIN_REFRESH_INTERVAL_SECONDS = 60L // Don't refresh more than once per minute
+        private const val REFRESH_BUFFER_MINUTES = 5L
+        private const val MIN_REFRESH_INTERVAL_SECONDS = 60L
         private const val MAX_RETRY_ATTEMPTS = 3
         private const val INITIAL_RETRY_DELAY_MS = 1000L
+        private const val TOKEN_DATA_PREFIX = "token_data_"
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -60,13 +46,10 @@ class TokenRefreshManager @Inject constructor() {
     private val _tokenRefreshEvents = MutableStateFlow<TokenRefreshEvent?>(null)
     val tokenRefreshEvents: StateFlow<TokenRefreshEvent?> = _tokenRefreshEvents.asStateFlow()
 
-    /**
-     * Token information with expiration tracking
-     */
     data class TokenInfo(
         val providerId: String,
         val token: String,
-        val expiresAt: Long, // Unix timestamp in milliseconds
+        val expiresAt: Long,
         val refreshCallback: suspend (String) -> Result<String>,
         var lastRefreshAttempt: Long = 0,
         var refreshAttempts: Int = 0
@@ -80,9 +63,14 @@ class TokenRefreshManager @Inject constructor() {
         }
     }
 
-    /**
-     * Token refresh events
-     */
+    private data class PersistentTokenData(
+        val providerId: String,
+        val token: String,
+        val expiresAt: Long,
+        val lastRefreshAttempt: Long = 0,
+        val refreshAttempts: Int = 0
+    )
+
     sealed class TokenRefreshEvent {
         data class RefreshStarted(val providerId: String) : TokenRefreshEvent()
         data class RefreshSuccess(val providerId: String, val newToken: String) : TokenRefreshEvent()
@@ -90,14 +78,61 @@ class TokenRefreshManager @Inject constructor() {
         data class TokenExpired(val providerId: String) : TokenRefreshEvent()
     }
 
-    /**
-     * Register a token with automatic refresh
-     *
-     * @param providerId Unique identifier for the provider
-     * @param token Current JWT token
-     * @param expiresInSeconds Token expiration in seconds from now
-     * @param refreshCallback Callback to refresh the token
-     */
+    private val callbacks = ConcurrentHashMap<String, suspend (String) -> Result<String>>()
+
+    suspend fun initialize() {
+        try {
+            val tokenKeys = mutableListOf<String>()
+            // FIX: Access underlying DataStore correctly via map
+            // SecureDataStore.data returns DataStore<Preferences>
+            val preferences = secureDataStore.data.data.first()
+            val allKeys = preferences.asMap().keys
+            allKeys.forEach { key ->
+                if (key.name.startsWith(TOKEN_DATA_PREFIX)) {
+                    tokenKeys.add(key.name)
+                }
+            }
+
+            tokenKeys.forEach { key ->
+                try {
+                    val json = secureDataStore.getString(key)
+                    if (json != null) {
+                        val persistentData = gson.fromJson<PersistentTokenData>(
+                            json,
+                            object : TypeToken<PersistentTokenData>() {}.type
+                        )
+
+                        tokens[persistentData.providerId] = TokenInfo(
+                            providerId = persistentData.providerId,
+                            token = persistentData.token,
+                            expiresAt = persistentData.expiresAt,
+                            refreshCallback = { _ ->
+                                Result.failure(Exception("Refresh callback not re-registered after restart"))
+                            },
+                            lastRefreshAttempt = persistentData.lastRefreshAttempt,
+                            refreshAttempts = persistentData.refreshAttempts
+                        )
+
+                        if (tokens[persistentData.providerId]?.isExpired() == true) {
+                            Log.w(TAG, "Restored token for ${persistentData.providerId} is expired")
+                            _tokenRefreshEvents.value = TokenRefreshEvent.TokenExpired(persistentData.providerId)
+                        } else {
+                            tokens[persistentData.providerId]?.let { scheduleRefresh(persistentData.providerId, it) }
+                        }
+
+                        Log.d(TAG, "Successfully restored token for ${persistentData.providerId}")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to restore token from key $key", e)
+                }
+            }
+
+            Log.i(TAG, "TokenRefreshManager initialized with ${tokens.size} tokens")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize TokenRefreshManager", e)
+        }
+    }
+
     fun registerToken(
         providerId: String,
         token: String,
@@ -113,27 +148,25 @@ class TokenRefreshManager @Inject constructor() {
         )
 
         tokens[providerId] = tokenInfo
-        scheduleRefresh(providerId, tokenInfo)
+        callbacks[providerId] = refreshCallback
 
+        scope.launch {
+            persistTokenData(providerId, tokenInfo)
+        }
+
+        scheduleRefresh(providerId, tokenInfo)
         Log.d(TAG, "Registered token for $providerId, expires in ${expiresInSeconds}s")
     }
 
-    /**
-     * Get a valid token for the provider, refreshing if necessary
-     *
-     * @return Current valid token, or null if expired and refresh failed
-     */
     suspend fun getValidToken(providerId: String): String? {
         val tokenInfo = tokens[providerId] ?: return null
 
-        // If token is expired, try immediate refresh
         if (tokenInfo.isExpired()) {
             Log.w(TAG, "Token for $providerId is expired, attempting immediate refresh")
             _tokenRefreshEvents.value = TokenRefreshEvent.TokenExpired(providerId)
             return refreshTokenNow(providerId)
         }
 
-        // If token is near expiry and can be refreshed, refresh in background
         if (tokenInfo.isNearExpiry() && tokenInfo.canRefresh()) {
             Log.d(TAG, "Token for $providerId is near expiry, triggering background refresh")
             scope.launch {
@@ -144,11 +177,6 @@ class TokenRefreshManager @Inject constructor() {
         return tokenInfo.token
     }
 
-    /**
-     * Manually trigger token refresh
-     *
-     * @return New token or null if refresh failed
-     */
     suspend fun refreshTokenNow(providerId: String): String? = withContext(Dispatchers.IO) {
         val tokenInfo = tokens[providerId] ?: return@withContext null
 
@@ -161,7 +189,7 @@ class TokenRefreshManager @Inject constructor() {
         _tokenRefreshEvents.value = TokenRefreshEvent.RefreshStarted(providerId)
 
         var attempt = 0
-        var delay = INITIAL_RETRY_DELAY_MS
+        var delayTime = INITIAL_RETRY_DELAY_MS
 
         while (attempt < MAX_RETRY_ATTEMPTS) {
             try {
@@ -172,16 +200,13 @@ class TokenRefreshManager @Inject constructor() {
                 if (result.isSuccess) {
                     val newToken = result.getOrNull() ?: return@withContext null
 
-                    // Update token info
                     val newTokenInfo = tokenInfo.copy(
                         token = newToken,
-                        // Assume 1 hour expiry if not specified
                         expiresAt = System.currentTimeMillis() + (3600 * 1000),
                         refreshAttempts = 0
                     )
                     tokens[providerId] = newTokenInfo
-
-                    // Reschedule refresh
+                    persistTokenData(providerId, newTokenInfo)
                     scheduleRefresh(providerId, newTokenInfo)
 
                     Log.i(TAG, "Successfully refreshed token for $providerId")
@@ -193,22 +218,21 @@ class TokenRefreshManager @Inject constructor() {
                     Log.w(TAG, "Token refresh attempt ${attempt + 1} failed for $providerId: $error")
 
                     if (attempt < MAX_RETRY_ATTEMPTS - 1) {
-                        delay(delay)
-                        delay *= 2 // Exponential backoff
+                        delay(delayTime)
+                        delayTime *= 2
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Token refresh exception for $providerId", e)
                 if (attempt < MAX_RETRY_ATTEMPTS - 1) {
-                    delay(delay)
-                    delay *= 2
+                    delay(delayTime)
+                    delayTime *= 2
                 }
             }
 
             attempt++
         }
 
-        // All attempts failed
         tokenInfo.refreshAttempts = attempt
         _tokenRefreshEvents.value = TokenRefreshEvent.RefreshFailed(
             providerId = providerId,
@@ -220,57 +244,62 @@ class TokenRefreshManager @Inject constructor() {
         return@withContext null
     }
 
-    /**
-     * Unregister a token and cancel refresh scheduling
-     */
+    private suspend fun persistTokenData(providerId: String, tokenInfo: TokenInfo) {
+        try {
+            val persistentData = PersistentTokenData(
+                providerId = tokenInfo.providerId,
+                token = tokenInfo.token,
+                expiresAt = tokenInfo.expiresAt,
+                lastRefreshAttempt = tokenInfo.lastRefreshAttempt,
+                refreshAttempts = tokenInfo.refreshAttempts
+            )
+            val json = gson.toJson(persistentData)
+            secureDataStore.putString(TOKEN_DATA_PREFIX + providerId, json)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to persist token data for $providerId", e)
+        }
+    }
+
     fun unregisterToken(providerId: String) {
         tokens.remove(providerId)
+        callbacks.remove(providerId)
         refreshJobs[providerId]?.cancel()
         refreshJobs.remove(providerId)
+
+        scope.launch {
+            try {
+                secureDataStore.remove(TOKEN_DATA_PREFIX + providerId)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to remove token data for $providerId", e)
+            }
+        }
+
         Log.d(TAG, "Unregistered token for $providerId")
     }
 
-    /**
-     * Check if a token is registered
-     */
     fun hasToken(providerId: String): Boolean = tokens.containsKey(providerId)
 
-    /**
-     * Get token expiration time
-     *
-     * @return Unix timestamp in milliseconds, or null if not registered
-     */
     fun getTokenExpiration(providerId: String): Long? = tokens[providerId]?.expiresAt
 
-    /**
-     * Get time until expiration
-     *
-     * @return Duration until expiration, or null if not registered
-     */
     fun getTimeUntilExpiration(providerId: String): Duration? {
         val tokenInfo = tokens[providerId] ?: return null
         val remaining = tokenInfo.expiresAt - System.currentTimeMillis()
-        return if (remaining > 0) remaining.toDuration(DurationUnit.MILLISECONDS) else Duration.ZERO
+        return if (remaining > 0) remaining.milliseconds else Duration.ZERO
     }
 
-    /**
-     * Schedule automatic token refresh
-     */
     private fun scheduleRefresh(providerId: String, tokenInfo: TokenInfo) {
-        // Cancel existing job
         refreshJobs[providerId]?.cancel()
 
-        // Calculate delay until refresh (refresh 5 minutes before expiry)
         val refreshAt = tokenInfo.expiresAt - REFRESH_BUFFER_MINUTES.minutes.inWholeMilliseconds
-        val delay = (refreshAt - System.currentTimeMillis()).coerceAtLeast(0)
+        val delayTime = (refreshAt - System.currentTimeMillis()).coerceAtLeast(0)
 
-        Log.d(TAG, "Scheduling refresh for $providerId in ${delay / 1000}s")
+        Log.d(TAG, "Scheduling refresh for $providerId in ${delayTime / 1000}s")
 
         val job = scope.launch {
             try {
-                delay(delay)
+                delay(delayTime)
 
-                if (tokens[providerId] == tokenInfo) { // Ensure token hasn't been updated
+                if (tokens[providerId] == tokenInfo) {
                     Log.d(TAG, "Scheduled refresh triggered for $providerId")
                     refreshTokenNow(providerId)
                 }
@@ -289,14 +318,8 @@ class TokenRefreshManager @Inject constructor() {
         refreshJobs[providerId] = job
     }
 
-    /**
-     * Get all registered provider IDs
-     */
     fun getRegisteredProviders(): Set<String> = tokens.keys.toSet()
 
-    /**
-     * Get refresh statistics for debugging
-     */
     fun getRefreshStats(): Map<String, RefreshStats> {
         return tokens.mapValues { (_, info) ->
             RefreshStats(
@@ -319,14 +342,12 @@ class TokenRefreshManager @Inject constructor() {
         val lastRefreshAttempt: Long
     )
 
-    /**
-     * Cleanup resources
-     */
     fun shutdown() {
         scope.cancel()
         refreshJobs.values.forEach { it.cancel() }
         refreshJobs.clear()
         tokens.clear()
+        callbacks.clear()
         Log.d(TAG, "TokenRefreshManager shut down")
     }
 }

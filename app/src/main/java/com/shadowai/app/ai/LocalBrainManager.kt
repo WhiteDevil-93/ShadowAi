@@ -1,7 +1,7 @@
 package com.shadowai.app.ai
 
-import com.shadowai.app.providers.ActiveProviderConfig
-import com.shadowai.app.providers.ApiStyle
+import com.shadowai.core.providers.ActiveProviderConfig
+import com.shadowai.core.providers.ApiStyle
 import javax.inject.Inject
 import javax.inject.Singleton
 

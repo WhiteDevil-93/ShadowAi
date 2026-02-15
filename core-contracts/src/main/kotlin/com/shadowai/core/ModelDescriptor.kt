@@ -30,7 +30,7 @@ data class ModelDescriptor(
     /**
      * Set of capabilities this model supports.
      */
-    val capabilities: Set<Capability>,
+    val capabilities: Set<Capability> = emptySet(),
 
     /**
      * Set of transforms this model can perform.
@@ -45,12 +45,24 @@ data class ModelDescriptor(
     /**
      * Maximum context length supported by this model.
      */
-    val maxContext: Int = 4096
+    val maxContext: Int = 4096,
+
+    /**
+     * Performance profile characteristics for routing decisions.
+     */
+    val performanceProfile: PerformanceProfile = PerformanceProfile(),
+
+    /**
+     * Semantic identifier for deduplication across providers.
+     */
+    val semanticId: String = ""
 ) : Parcelable {
+
     /**
      * Returns the number of tokens available for generation given the input token count.
      */
     fun getAvailableGenerationTokens(inputTokens: Int): Int = (maxContext - inputTokens).coerceAtLeast(0)
+
     /**
      * Returns whether this model supports a specific transform.
      */
@@ -65,4 +77,19 @@ data class ModelDescriptor(
      * Returns the display string of the provider.
      */
     fun getProviderDisplayName(): String = providerId.getDisplayName()
+
+    /**
+     * Checks if this model supports all of the given capabilities.
+     */
+    fun hasAllCapabilities(required: Set<Capability>): Boolean {
+        return capabilities.containsAll(required)
+    }
+
+    /**
+     * Gets the effective semantic ID, falling back to ID if not specified.
+     * Uses ModelRegistry centralized logic if available in classpath.
+     */
+    fun getEffectiveSemanticId(): String {
+        return semanticId.ifBlank { id }
+    }
 }

@@ -40,6 +40,7 @@ fun ProviderConfigScreen(
     providerId: ProviderId,
     onNavigateBack: () -> Unit,
     onSaveConfig: () -> Unit,
+    onNavigateToModelPicker: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProviderConfigViewModel = hiltViewModel()
 ) {
@@ -111,6 +112,11 @@ fun ProviderConfigScreen(
                     },
                     onModelsImported = {
                         viewModel.discoverModels(providerId)
+                    },
+                    onNavigateToModelPicker = if (providerId == ProviderId.LIQUID) {
+                        onNavigateToModelPicker
+                    } else {
+                        null
                     }
                 )
             }

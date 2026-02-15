@@ -7,15 +7,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,15 +36,46 @@ import com.shadowai.app.ui.theme.*
 /**
  * Chat Input Field - Implements UI Orchestrator governance
  * Supports multimodal input (Text + Image) via Photo Picker.
+ * Also handles content shared from other apps via Intent Share Sheet.
+ *
+ * @param initialText Pre-filled text from Intent Share Sheet
+ * @param initialImageUris Pre-filled images from Intent Share Sheet
+ * @param onSharedContentConsumed Called when shared content has been used
  */
 @Composable
 fun ChatInputField(
     onSendMessage: (String, Uri?) -> Unit,
     mode: ChatMode = ChatMode.CHAT,
+    initialText: String? = null,
+    initialImageUris: List<Uri> = emptyList(),
+    onSharedContentConsumed: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var text by remember { mutableStateOf("") }
+    var text by remember { mutableStateOf(initialText ?: "") }
     var attachedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var sharedImageUris by remember { mutableStateOf<List<Uri>>(initialImageUris) }
+    
+    // Update text when initialText changes (from share sheet)
+    LaunchedEffect(initialText) {
+        if (initialText != null && text.isBlank()) {
+            text = initialText
+            onSharedContentConsumed()
+        }
+    }
+    
+    // Update images when initialImageUris changes (from share sheet)
+    LaunchedEffect(initialImageUris) {
+        if (initialImageUris.isNotEmpty() && sharedImageUris.isEmpty()) {
+            // Set the first image as attached and rest as shared
+            attachedImageUri = initialImageUris.firstOrNull()
+            sharedImageUris = if (initialImageUris.size > 1) {
+                initialImageUris.drop(1)
+            } else {
+                emptyList()
+            }
+            onSharedContentConsumed()
+        }
+    }
 
     // Photo Picker Launcher
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -62,44 +101,66 @@ fun ChatInputField(
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column {
-            // Attached Image Preview
+            // Attached Images Preview Row (supports multiple from share sheet)
+            val hasAttachedImages = attachedImageUri != null || sharedImageUris.isNotEmpty()
             AnimatedVisibility(
-                visible = attachedImageUri != null,
+                visible = hasAttachedImages,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                Box(modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, top = 12.dp, end = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Primary attached image
                     attachedImageUri?.let { uri ->
-                        Box {
-                            Image(
-                                painter = rememberAsyncImagePainter(uri),
-                                contentDescription = "Attached Image",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .clip(RoundedCornerShape(12.dp))
+                        ImagePreviewItem(
+                            uri = uri,
+                            onRemove = { attachedImageUri = null },
+                            label = "Attached"
+                        )
+                    }
+                    // Additional shared images
+                    sharedImageUris.take(3).forEachIndexed { index, uri ->
+                        ImagePreviewItem(
+                            uri = uri,
+                            onRemove = {
+                                sharedImageUris = sharedImageUris.toMutableList().apply {
+                                    removeAt(index)
+                                }
+                            },
+                            label = if (sharedImageUris.size > 1) "${index + 2}" else null
+                        )
+                    }
+                    // Show count badge if more than 4 images
+                    if (sharedImageUris.size > 3) {
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(bg_2),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "+${sharedImageUris.size - 3}",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = emerald_core
                             )
-                            // Remove button
-                            IconButton(
-                                onClick = { attachedImageUri = null },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = 8.dp, y = (-8).dp)
-                                    .size(24.dp),
-                                colors = IconButtonDefaults.filledIconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = Color.White
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Remove image",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
                         }
                     }
                 }
+            }
+            
+            // Shared content indicator
+            if (initialText != null && text.isNotBlank()) {
+                Text(
+                    text = "📋 Shared from another app",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = emerald_core,
+                    modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                )
             }
 
             Row(
@@ -174,6 +235,64 @@ fun ChatInputField(
                         modifier = Modifier.size(24.dp)
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Preview item for attached/shared images
+ */
+@Composable
+private fun ImagePreviewItem(
+    uri: Uri,
+    onRemove: () -> Unit,
+    label: String? = null
+) {
+    Box(
+        modifier = Modifier
+            .size(100.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(bg_2)
+    ) {
+        Image(
+            painter = rememberAsyncImagePainter(uri),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // Remove button
+        IconButton(
+            onClick = onRemove,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(28.dp)
+                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Remove",
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        // Label badge (if provided)
+        label?.let {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(6.dp)
+                    .background(emerald_core, CircleShape)
+                    .size(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Black
+                )
             }
         }
     }

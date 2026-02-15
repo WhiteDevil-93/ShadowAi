@@ -20,15 +20,6 @@ import javax.inject.Singleton
 
 /**
  * Secure DataStore implementation using Google Tink for encryption.
- *
- * This replaces the deprecated EncryptedSharedPreferences with a modern,
- * coroutine-based approach using Jetpack DataStore and Tink AEAD encryption.
- *
- * Features:
- * - Hardware-backed key storage via Android Keystore
- * - AES-256-GCM encryption for all values
- * - Async-first API with suspend functions
- * - Migration support from legacy EncryptedSharedPreferences
  */
 @Singleton
 class SecureDataStore @Inject constructor(
@@ -40,16 +31,17 @@ class SecureDataStore @Inject constructor(
         private const val PREFERENCE_FILE = "__tink_keyset_prefs__"
         private const val MASTER_KEY_URI = "android-keystore://shadowai_master_key"
 
-        // Initialize Tink AEAD configuration
         init {
             AeadConfig.register()
         }
     }
 
     /**
-     * Tink AEAD primitive for encryption/decryption.
-     * Uses Android Keystore for hardware-backed master key storage.
+     * Exposes the underlying DataStore for advanced operations like key listing.
+     * Note: Values returned by this DataStore are encrypted.
      */
+    val data: DataStore<Preferences> get() = dataStore
+
     private val aead: Aead by lazy {
         val keysetManager = AndroidKeysetManager.Builder()
             .withSharedPref(context, KEYSET_NAME, PREFERENCE_FILE)
@@ -60,11 +52,6 @@ class SecureDataStore @Inject constructor(
         keysetManager.keysetHandle.getPrimitive(Aead::class.java)
     }
 
-    /**
-     * Store an encrypted string value.
-     * @param key The preference key
-     * @param value The plaintext value to encrypt and store
-     */
     suspend fun putString(key: String, value: String) {
         val prefKey = stringPreferencesKey(key)
         val encrypted = encrypt(value, key)
@@ -73,11 +60,6 @@ class SecureDataStore @Inject constructor(
         }
     }
 
-    /**
-     * Retrieve and decrypt a string value.
-     * @param key The preference key
-     * @return The decrypted value, or null if not found/decryption fails
-     */
     suspend fun getString(key: String): String? {
         val prefKey = stringPreferencesKey(key)
         return dataStore.data.map { preferences ->
@@ -85,7 +67,6 @@ class SecureDataStore @Inject constructor(
                 try {
                     decrypt(encrypted, key)
                 } catch (e: Exception) {
-                    // Log decryption failures for debugging
                     Log.w("SecureDataStore", "Failed to decrypt value for key: $key", e)
                     null
                 }
@@ -93,10 +74,6 @@ class SecureDataStore @Inject constructor(
         }.first()
     }
 
-    /**
-     * Remove a value from the store.
-     * @param key The preference key to remove
-     */
     suspend fun remove(key: String) {
         val prefKey = stringPreferencesKey(key)
         dataStore.edit { preferences ->
@@ -104,11 +81,6 @@ class SecureDataStore @Inject constructor(
         }
     }
 
-    /**
-     * Check if a key exists in the store.
-     * @param key The preference key to check
-     * @return true if the key exists
-     */
     suspend fun contains(key: String): Boolean {
         val prefKey = stringPreferencesKey(key)
         return dataStore.data.map { preferences ->
@@ -116,19 +88,12 @@ class SecureDataStore @Inject constructor(
         }.first()
     }
 
-    /**
-     * Clear all stored values.
-     */
     suspend fun clear() {
         dataStore.edit { preferences ->
             preferences.clear()
         }
     }
 
-    /**
-     * Observe a string value as a Flow.
-     * Emits null initially if the key doesn't exist.
-     */
     fun observeString(key: String): Flow<String?> {
         val prefKey = stringPreferencesKey(key)
         return dataStore.data.map { preferences ->
@@ -142,8 +107,6 @@ class SecureDataStore @Inject constructor(
             }
         }
     }
-
-    // --- Private Encryption Helpers ---
 
     private fun encrypt(plaintext: String, associatedKey: String = ""): String {
         val aad = associatedKey.toByteArray(Charsets.UTF_8)

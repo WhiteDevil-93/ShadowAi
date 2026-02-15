@@ -371,9 +371,11 @@ class ReplicateAdapter(
         class UnknownError(
             code: Int,
             message: String?,
-            apiErrorCode: String? = null
+            apiErrorCode: String? = null,
+            cause: Throwable? = null
         ) : ReplicateException(
             message = "Unknown error (HTTP $code): ${message ?: "No details"}",
+            cause = cause,
             errorCode = apiErrorCode
         )
     }

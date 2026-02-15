@@ -15,14 +15,17 @@
  */
 package com.shadowai.app.ui.navigation
 
+import android.net.Uri
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.core.tween
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
@@ -35,11 +38,16 @@ import com.shadowai.app.ui.providers.ProviderConfigScreen
 import com.shadowai.app.ui.providers.ProviderSelectionScreen
 import com.shadowai.app.ui.workflows.ImageGenerationScreen
 import com.shadowai.app.ui.settings.DiagnosticsScreen
+import com.shadowai.app.ui.chat.export.ExportViewModel
 import com.shadowai.app.ui.settings.HotSwapScreen
+import com.shadowai.app.ui.settings.SecuritySettingsScreen
 import com.shadowai.app.ui.settings.SettingsScreen
 import com.shadowai.app.ui.settings.GenerationSettingsScreen
 import com.shadowai.app.ui.settings.UsageCreditsScreen
 import com.shadowai.app.ui.settings.AppearanceSettingsScreen
+import com.shadowai.app.ui.settings.VoiceSettingsScreen
+import com.shadowai.app.ui.history.ChatHistoryScreen
+import com.shadowai.app.ui.screens.ModelPickerScreen
 
 /**
  * Main Navigation Graph using Navigation 3
@@ -82,6 +90,9 @@ import com.shadowai.app.ui.settings.AppearanceSettingsScreen
  * @param backStack The navigation back stack as a SnapshotStateList
  * @param chatViewModel Shared chat view model
  * @param currentUser Current authenticated user
+ * @param requireBiometricForHistory Whether chat history requires biometric auth
+ * @param launchVoiceInput Whether chat should trigger voice input on next render
+ * @param onVoiceInputConsumed Callback after launchVoiceInput is consumed
  * @param onSignOut Callback for user sign out
  * @param modifier Modifier for the NavDisplay
  */
@@ -91,6 +102,9 @@ fun ShadowAINavGraph(
     backStack: androidx.compose.runtime.snapshots.SnapshotStateList<NavigationRoute>,
     chatViewModel: ChatViewModel,
     currentUser: User? = null,
+    requireBiometricForHistory: Boolean = true,
+    launchVoiceInput: Boolean = false,
+    onVoiceInputConsumed: () -> Unit = {},
     onSignOut: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -117,10 +131,32 @@ fun ShadowAINavGraph(
         },
         entryProvider = entryProvider {
             // Chat Screen - Home/Default
-            entry<Chat> {
+            entry<Chat> { route ->
+                // ViewModels
+                val exportViewModel: ExportViewModel = hiltViewModel()
+
+                // Handle shared content from Intent Share Sheet
+                val sharedText = (route as? Chat)?.initialText
+                val sharedImages = (route as? Chat)?.imageUris ?: emptyList()
+
+                // Pass shared content to ViewModel when available
+                LaunchedEffect(sharedText, sharedImages) {
+                    if (sharedText != null) {
+                        chatViewModel.setSharedText(sharedText)
+                    }
+                    if (sharedImages.isNotEmpty()) {
+                        chatViewModel.setSharedImages(sharedImages.map { it.uri })
+                    }
+                }
+
                 ChatScreen(
                     viewModel = chatViewModel,
+                    exportViewModel = exportViewModel,
                     user = currentUser,
+                    initialText = sharedText,
+                    initialImages = sharedImages.map { it.uri },
+                    launchVoiceInput = launchVoiceInput,
+                    onVoiceInputConsumed = onVoiceInputConsumed,
                     onNavigateToImageGeneration = {
                         // GOVERNANCE: Navigate to focus mode
                         backStack.removeAll { it is ImageGeneration }
@@ -131,9 +167,9 @@ fun ShadowAINavGraph(
                         backStack.add(ProviderSelection)
                     },
                     onNavigateToProviderConfig = { providerId ->
-                        val route = ProviderConfig.createRoute(providerId)
+                        val configRoute = ProviderConfig.createRoute(providerId)
                         backStack.removeAll { it is ProviderConfig }
-                        backStack.add(route)
+                        backStack.add(configRoute)
                     },
                     onNavigateToSettings = {
                         backStack.removeAll { it is Settings }
@@ -215,6 +251,18 @@ fun ShadowAINavGraph(
                     onNavigateToHotSwap = {
                         backStack.removeAll { it is HotSwap }
                         backStack.add(HotSwap)
+                    },
+                    onNavigateToSecurity = {
+                        backStack.removeAll { it is SecuritySettings }
+                        backStack.add(SecuritySettings)
+                    },
+                    onNavigateToVoiceSettings = {
+                        backStack.removeAll { it is VoiceSettings }
+                        backStack.add(VoiceSettings)
+                    },
+                    onNavigateToChatHistory = {
+                        backStack.removeAll { it is ChatHistory }
+                        backStack.add(ChatHistory)
                     }
                 )
             }
@@ -250,6 +298,49 @@ fun ShadowAINavGraph(
             // Provider Hot Swap Screen
             entry<HotSwap> {
                 HotSwapScreen(
+                    onNavigateBack = { backStack.removeLastOrNull() }
+                )
+            }
+
+            // Security Settings Screen
+            entry<SecuritySettings> {
+                SecuritySettingsScreen(
+                    onNavigateBack = { backStack.removeLastOrNull() }
+                )
+            }
+
+            // Voice Settings Screen
+            entry<VoiceSettings> {
+                VoiceSettingsScreen(
+                    onNavigateBack = { backStack.removeLastOrNull() }
+                )
+            }
+
+            // Chat History Screen with biometric protection
+            entry<ChatHistory> {
+                ChatHistoryScreen(
+                    requireBiometric = requireBiometricForHistory,
+                    onNavigateBack = { backStack.removeLastOrNull() },
+                    onConversationSelected = { conversationId ->
+                        // Navigate back to chat with the selected conversation
+                        backStack.removeAll { it is Chat }
+                        backStack.add(Chat())
+                    }
+                )
+            }
+
+            // Model Picker Screen with quantization support
+            entry<ModelPicker> { route ->
+                val providerId = route.toProviderId()
+                // Pass empty string to let ViewModel use default directory
+                val modelDir = ""
+
+                ModelPickerScreen(
+                    providerId = providerId,
+                    modelDir = modelDir,
+                    onModelSelected = { modelName ->
+                        backStack.removeLastOrNull()
+                    },
                     onNavigateBack = { backStack.removeLastOrNull() }
                 )
             }

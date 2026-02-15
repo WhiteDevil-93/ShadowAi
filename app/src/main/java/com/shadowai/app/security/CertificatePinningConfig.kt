@@ -40,42 +40,42 @@ object CertificatePinningConfig {
     val HOST_PINS: Map<String, List<String>> = mapOf(
         // OpenAI API
         "api.openai.com" to listOf(
-            "y5npFVdBuoqCSOdQa42qiUSPqwMpoei7NK0rQWGUaSU="
+            "sha256/y5npFVdBuoqCSOdQa42qiUSPqwMpoei7NK0rQWGUaSU="
         ),
 
         // Anthropic Claude API
         "api.anthropic.com" to listOf(
-            "60QDDZy98CjK1XTBTlPbInyzJzi+817KvW+usCk6r+o="
+            "sha256/60QDDZy98CjK1XTBTlPbInyzJzi+817KvW+usCk6r+o="
         ),
 
         // Google Gemini (generativelanguage.googleapis.com)
         "generativelanguage.googleapis.com" to listOf(
-            "beMAm4GYDucmQKh+VCUDnjnyi6/lYbL8AGn0xzLxwdQ="
+            "sha256/beMAm4GYDucmQKh+VCUDnjnyi6/lYbL8AGn0xzLxwdQ="
         ),
 
         // OpenRouter
         "openrouter.ai" to listOf(
-            "2ETytvFJ0SYiiaUyT3xMrJ3Yuen/K58SNiB87YChuRg="
+            "sha256/2ETytvFJ0SYiiaUyT3xMrJ3Yuen/K58SNiB87YChuRg="
         ),
 
         // DeepSeek
         "api.deepseek.com" to listOf(
-            "DR0Gpd4Pbm6uwcjbOXvXkJ+RpBGTI0Fk3zXyJFx7tIc="
+            "sha256/DR0Gpd4Pbm6uwcjbOXvXkJ+RpBGTI0Fk3zXyJFx7tIc="
         ),
 
         // Mistral AI
         "api.mistral.ai" to listOf(
-            "WIL7Gb0Z+W0RVwIfIOJhj7MF02UNEWTAC+EaAyu9MFI="
+            "sha256/WIL7Gb0Z+W0RVwIfIOJhj7MF02UNEWTAC+EaAyu9MFI="
         ),
 
         // xAI (X)
         "api.x.ai" to listOf(
-            "goZa6+Wl5S9dLXkybh6d6cyFp6APuKnUTbOLvHjKvBs="
+            "sha256/goZa6+Wl5S9dLXkybh6d6cyFp6APuKnUTbOLvHjKvBs="
         ),
 
         // Groq
         "api.groq.com" to listOf(
-            "d4+HJjLne/sZOYjO+ObMgq4Wzv3hKzBFi7hrv+Gqmt0="
+            "sha256/d4+HJjLne/sZOYjO+ObMgq4Wzv3hKzBFi7hrv+Gqmt0="
         ),
 
         // Additional providers can be added here as needed
@@ -97,7 +97,7 @@ object CertificatePinningConfig {
 
         HOST_PINS.forEach { (hostname, pins) ->
             pins.forEach { pin ->
-                builder.add(hostname, pin)
+                builder.add(hostname, normalizePin(pin))
             }
         }
 
@@ -117,9 +117,24 @@ object CertificatePinningConfig {
 
         val builder = CertificatePinner.Builder()
         pins.forEach { pin ->
-            builder.add(hostname, pin)
+            builder.add(hostname, normalizePin(pin))
         }
 
         return builder.build()
+    }
+
+    /**
+     * Normalizes pin format for OkHttp.
+     *
+     * OkHttp requires each pin to start with `sha256/` or `sha1/`. We treat raw base64
+     * values as SHA-256 pins for backward compatibility with existing configuration.
+     */
+    private fun normalizePin(pin: String): String {
+        val trimmed = pin.trim()
+        return if (trimmed.startsWith("sha256/") || trimmed.startsWith("sha1/")) {
+            trimmed
+        } else {
+            "sha256/$trimmed"
+        }
     }
 }

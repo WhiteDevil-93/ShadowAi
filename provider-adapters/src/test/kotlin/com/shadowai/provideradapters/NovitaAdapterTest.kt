@@ -102,8 +102,12 @@ class NovitaAdapterTest {
         )
 
         assertTrue(result.isSuccess)
-        val novitaResult = result.getOrNull() as NovitaAdapter.NovitaImageResult
-        assertEquals("https://example.com/novita-image.png", novitaResult.imageUrls.first())
+
+        // NovitaImageResult is internal, but execute returns Result<Any>
+        // We cast to the known internal type for verification within the module
+        val novitaResult = result.getOrNull() as? NovitaImageResult
+        assertNotNull(novitaResult)
+        assertEquals("https://example.com/novita-image.png", novitaResult?.imageUrls?.first())
 
         // Check submission
         val request1 = mockWebServer.takeRequest()

@@ -10,6 +10,8 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.shadowai.core.security.SecretBytes
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -38,10 +40,10 @@ class ProviderModelRepository @Inject constructor(
     fun getSelectedModels(providerId: ProviderId): List<String> =
         readStringList("$KEY_SELECTED_MODELS_PREFIX${providerId.name}")
 
-    fun setSelectedModels(providerId: ProviderId, models: List<String>) {
+    suspend fun setSelectedModels(providerId: ProviderId, models: List<String>) = withContext(Dispatchers.IO) {
         writeStringList("$KEY_SELECTED_MODELS_PREFIX${providerId.name}", models)
         crudRepository.getProvider(providerId)?.let {
-            crudRepository.saveSync(it.copy(selectedModels = models))
+            crudRepository.saveProvider(it.copy(selectedModels = models))
         }
     }
 
@@ -63,7 +65,7 @@ class ProviderModelRepository @Inject constructor(
         } ?: emptyList()
     }
 
-    fun saveCustomModels(providerId: ProviderId, modelIds: List<String>) {
+    suspend fun saveCustomModels(providerId: ProviderId, modelIds: List<String>) = withContext(Dispatchers.IO) {
         val key = "$KEY_CUSTOM_MODELS_PREFIX${providerId.name}"
         if (modelIds.isEmpty()) {
             prefs.edit().remove(key).apply()
@@ -81,7 +83,7 @@ class ProviderModelRepository @Inject constructor(
         }
 
         crudRepository.getProvider(providerId)?.let {
-            crudRepository.saveSync(
+            crudRepository.saveProvider(
                 it.copy(
                     customModels = modelIds,
                     enabled = modelIds.isNotEmpty() || secretRepository.getApiKey(providerId.name)?.withSecretBytes { bytes -> String(bytes).isNotBlank() } == true,

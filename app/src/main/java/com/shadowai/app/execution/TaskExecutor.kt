@@ -1,24 +1,25 @@
 package com.shadowai.app.execution
 
+import android.util.Log
 import com.shadowai.core.ProviderId
 
 import com.shadowai.app.admin.implementation.AdminRepository
 import com.shadowai.app.models.ModelId
-import com.shadowai.app.providers.ApiStyle
+import com.shadowai.core.providers.ApiStyle
 import com.shadowai.app.routing.RoutingPolicy
 import com.shadowai.app.routing.RoutingDecision
 import com.shadowai.app.routing.ExecutionSource
 import com.shadowai.app.tasks.Task
 import com.shadowai.app.tasks.TaskState
 import com.shadowai.app.ai.MemoryConstants
-import com.shadowai.app.ai.LocalBrainManager
 import com.shadowai.app.providers.ProviderSelector
-import com.shadowai.app.providers.ActiveProviderConfig
-import com.shadowai.app.providers.Capability
-import com.shadowai.core.providers.ProviderRepository
+import com.shadowai.core.providers.ActiveProviderConfig
+import com.shadowai.core.Capability
+// REPOSITORY ADAPTER CLEANUP: Removed ProviderRepository facade dependency
+// Now using split repositories directly via ProviderSelector
 import com.shadowai.core.security.PiiMaskingProcessor
 import com.shadowai.app.providers.LocalRuntimeConfig
-import com.shadowai.app.execution.TaskExecutionService
+// LEGACY REMOVAL: Direct TaskExecutionService dependency removed - now uses HybridAiExecutor only
 import com.shadowai.app.routing.RoutingEngine
 import com.shadowai.diagnostics.ErrorCollector
 import com.shadowai.diagnostics.ErrorContext
@@ -37,6 +38,9 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 import com.shadowai.app.tasks.TaskType
+// M-3: HTTP 408 retry codes - import NetworkException for 408 handling
+import com.shadowai.app.exceptions.NetworkException
+import com.shadowai.app.security.ApiKeyRedaction
 
 interface TaskExecutor {
     suspend fun execute(task: Task, policy: RoutingPolicy): ExecutionResult
@@ -56,12 +60,11 @@ data class RetryPolicy(
 class DefaultTaskExecutor @Inject constructor(
     @ApplicationContext private val context: Context,
     private val routingEngine: RoutingEngine,
-    private val brainManager: LocalBrainManager,
     private val hybridExecutor: HybridAiExecutor,
     private val adminRepo: AdminRepository,
     private val providerSelector: ProviderSelector,
-    private val providerRepository: ProviderRepository,
-    private val taskExecutionService: TaskExecutionService,
+    // REPOSITORY ADAPTER CLEANUP: Removed ProviderRepository facade - now using ProviderSelector as coordinator
+    // LEGACY REMOVAL: Removed TaskExecutionService and LocalBrainManager dependencies - adapter architecture complete
     private val errorCollector: ErrorCollector,
     private val errorContextStore: ErrorContextStore,
     internal val piiMaskingProcessor: PiiMaskingProcessor
@@ -101,7 +104,7 @@ class DefaultTaskExecutor @Inject constructor(
         val executionTimestamp = System.currentTimeMillis()
         val routingDecision = routingEngine.determineRouting(task, policy)
 
-        // Configure brain manager with active provider before execution
+        // Select active provider configuration
         val activeConfig = selectActiveProviderConfig(task, routingDecision)
 
         // Determine model ID from actual provider config
@@ -144,7 +147,8 @@ class DefaultTaskExecutor @Inject constructor(
             )
         }
 
-        brainManager.applyConfig(activeConfig)
+        // L-4: Removed brainManager.applyConfig() - ProviderSelector now handles provider configuration
+        // The active config is passed directly to execution methods
 
         // HARD ASSERTION: Verify LIQUID provider is routed correctly
         require(activeConfig.providerId != ProviderId.LIQUID ||
@@ -153,9 +157,9 @@ class DefaultTaskExecutor @Inject constructor(
         }
 
         // Check if this is a LOCAL provider - bypass retries for deterministic local failures
-        val isLocalProvider = activeConfig?.apiStyle == ApiStyle.LIQUID ||
-                              activeConfig?.apiStyle == ApiStyle.LOCAL_TEXT ||
-                              activeConfig?.apiStyle == ApiStyle.LOCAL_IMAGE
+        val isLocalProvider = activeConfig.apiStyle == ApiStyle.LIQUID ||
+                              activeConfig.apiStyle == ApiStyle.LOCAL_TEXT ||
+                              activeConfig.apiStyle == ApiStyle.LOCAL_IMAGE
 
         // Mask PII for cloud/external providers before execution
         val processedTask = if (!isLocalProvider) {
@@ -164,11 +168,11 @@ class DefaultTaskExecutor @Inject constructor(
             task
         }
 
-        android.util.Log.d(TAG, "Executing task with provider: ${activeConfig.providerId}, apiStyle: ${activeConfig.apiStyle}, isLocal: $isLocalProvider")
+        Log.d(TAG, "Executing task with provider: ${activeConfig.providerId}, apiStyle: ${activeConfig.apiStyle}, isLocal: $isLocalProvider")
 
         return if (isLocalProvider) {
             // LOCAL providers: Execute directly without retries - deterministic failures should NOT retry
-            android.util.Log.d(TAG, "LOCAL provider detected - bypassing retry logic")
+            Log.d(TAG, "LOCAL provider detected - bypassing retry logic")
             executeLocalProvider(processedTask, routingDecision, modelId, executionTimestamp, activeConfig)
         } else {
             // CLOUD providers: Use circuit breaker and retry logic
@@ -240,6 +244,11 @@ class DefaultTaskExecutor @Inject constructor(
         return createFailureResult(task, "Execution failed", executionTimestamp, routingDecision, modelId)
     }
 
+    /** M-3: HTTP 408 retry codes - added 408 as retriable
+     *  HTTP 408 (Request Timeout) is now properly flagged as a retriable error,
+     *  allowing automatic retry with the configured exponential backoff.
+     *  This handles servers that close idle connections before the client times out.
+     */
     private fun isRetriableError(error: Throwable?): Boolean {
         if (error == null) return true
 
@@ -248,6 +257,8 @@ class DefaultTaskExecutor @Inject constructor(
             is ConnectException -> true
             is java.io.IOException -> true // Network errors
             is TimeoutException -> true
+            // M-3: 408 Request Timeout is retriable - server closed connection, can retry
+            is NetworkException.ServerError -> error.code == 408
             else -> false
         }
     }
@@ -273,46 +284,204 @@ class DefaultTaskExecutor @Inject constructor(
             cause = error
         )
 
-        val cloudFallbacks = providerSelector.getCloudProviders(task.type)
-            .filter { providerId == null || it.providerId != providerId }
+        // MULTI-PROVIDER FALLBACK LOOP - H-9 Implementation
+        return tryMultiProviderFallback(
+            task = task,
+            originalRoutingDecision = routingDecision,
+            failedProviderId = providerId,
+            executionTimestamp = executionTimestamp,
+            initialError = error
+        )
+    }
 
-        if (cloudFallbacks.isNotEmpty()) {
-            val fallbackDecision = routingDecision.copy(
-                selectedSource = ExecutionSource.CLOUD,
-                reason = "Cloud provider out of credits. Switching to alternate cloud provider.",
-                overrideSource = "QuotaFallback"
-            )
-            for (config in cloudFallbacks) {
-                brainManager.applyConfig(config)
-                val attempt = attemptExecution(task, fallbackDecision, ModelId(config.modelId))
-                if (attempt.isSuccess) return attempt.getOrThrow()
-                val attemptError = attempt.exceptionOrNull()
-                if (attemptError is ProviderQuotaException) {
-                    attemptError.providerId?.let { disableProvider(it) }
-                    continue
+    /**
+     * MULTI-PROVIDER FALLBACK LOOP - H-9 Implementation
+     *
+     * Implements a robust fallback mechanism that iterates through available providers
+     * in a prioritized order until a successful execution or all providers are exhausted.
+     *
+     * Fallback Priority:
+     * 1. Other cloud providers (excluding the failed one)
+     * 2. Local providers (if applicable for task type)
+     * 3. Return failure with aggregated error information
+     */
+    private suspend fun tryMultiProviderFallback(
+        task: Task,
+        originalRoutingDecision: RoutingDecision,
+        failedProviderId: ProviderId?,
+        executionTimestamp: Long,
+        initialError: Throwable
+    ): ExecutionResult {
+        val attemptedProviders = mutableListOf<String>()
+        val errors = mutableListOf<String>()
+
+        // Track the failed provider
+        failedProviderId?.let { attemptedProviders.add(it.name) }
+        errors.add("Initial failure: ${initialError.message}")
+
+        // PHASE 1: Try other cloud providers
+        android.util.Log.d(TAG, "Fallback Phase 1: Trying alternate cloud providers")
+        val cloudFallbacks = providerSelector.getCloudProviders(task.type)
+            .filter { config ->
+                failedProviderId == null || config.providerId != failedProviderId
+            }
+            .sortedBy { it.priority } // Prioritize by configured priority
+
+        for (config in cloudFallbacks) {
+            if (config.providerId.name in attemptedProviders) continue
+
+            attemptedProviders.add(config.providerId.name)
+            android.util.Log.d(TAG, "Trying cloud fallback: ${config.providerId.name}")
+
+            try {
+                // L-4: Removed brainManager.applyConfig() - config passed directly to execution
+                val fallbackDecision = originalRoutingDecision.copy(
+                    selectedSource = ExecutionSource.CLOUD,
+                    reason = "Provider ${failedProviderId?.name ?: "unknown"} failed. Trying ${config.providerId.name}.",
+                    overrideSource = "MultiProviderFallback"
+                )
+
+                val result = executeWithRetryForFallback(task, fallbackDecision, ModelId(config.modelId))
+                if (result.isSuccess) {
+                    android.util.Log.i(TAG, "Cloud fallback successful: ${config.providerId.name}")
+                    return result.getOrThrow()
                 }
-                break
+
+                val error = result.exceptionOrNull()
+                errors.add("${config.providerId.name}: ${error?.message}")
+
+                if (error is ProviderQuotaException) {
+                    disableProvider(config.providerId)
+                }
+            } catch (e: IllegalStateException) {
+                errors.add("${config.providerId.name}: ${e.message}")
+                android.util.Log.w(TAG, "Cloud fallback failed (illegal state): ${config.providerId.name} - ${e.message}")
+            } catch (e: java.io.IOException) {
+                errors.add("${config.providerId.name}: ${e.message}")
+                android.util.Log.w(TAG, "Cloud fallback failed (IO): ${config.providerId.name} - ${e.message}")
+            } catch (e: SecurityException) {
+                errors.add("${config.providerId.name}: ${e.message}")
+                android.util.Log.w(TAG, "Cloud fallback failed (security): ${config.providerId.name} - ${e.message}")
             }
         }
 
-        val localConfig = providerSelector.nextLocal(task.type)
-        if (localConfig != null) {
-            brainManager.applyConfig(localConfig)
-            val localDecision = routingDecision.copy(
-                selectedSource = ExecutionSource.LOCAL,
-                reason = "Cloud provider out of credits. Falling back to local execution.",
-                overrideSource = "QuotaFallback"
-            )
-            return executeLocalProvider(task, localDecision, ModelId(localConfig.modelId), executionTimestamp, localConfig)
+        // PHASE 2: Try local providers if task type supports local execution
+        android.util.Log.d(TAG, "Fallback Phase 2: Trying local providers")
+        val localProviders = providerSelector.getLocalProviders(task.type)
+            .sortedBy { it.priority }
+
+        for (config in localProviders) {
+            if (config.providerId.name in attemptedProviders) continue
+
+            attemptedProviders.add(config.providerId.name)
+            android.util.Log.d(TAG, "Trying local fallback: ${config.providerId.name}")
+
+            try {
+                // L-4: Removed brainManager.applyConfig() - config passed directly to execution
+                val localDecision = originalRoutingDecision.copy(
+                    selectedSource = ExecutionSource.LOCAL,
+                    reason = "All cloud providers failed. Using local execution.",
+                    overrideSource = "MultiProviderFallback"
+                )
+
+                val result = executeLocalProvider(
+                    task = task,
+                    routingDecision = localDecision,
+                    modelId = ModelId(config.modelId),
+                    executionTimestamp = executionTimestamp,
+                    activeConfig = config
+                )
+
+                if (result.task.currentState is TaskState.Completed) {
+                    android.util.Log.i(TAG, "Local fallback successful: ${config.providerId.name}")
+                    return result
+                }
+
+                errors.add("${config.providerId.name}: ${(result.task.currentState as? TaskState.Failed)?.reason}")
+            } catch (e: IllegalStateException) {
+                errors.add("${config.providerId.name}: ${e.message}")
+                android.util.Log.w(TAG, "Local fallback failed (illegal state): ${config.providerId.name} - ${e.message}")
+            } catch (e: java.io.IOException) {
+                errors.add("${config.providerId.name}: ${e.message}")
+                android.util.Log.w(TAG, "Local fallback failed (IO): ${config.providerId.name} - ${e.message}")
+            } catch (e: SecurityException) {
+                errors.add("${config.providerId.name}: ${e.message}")
+                android.util.Log.w(TAG, "Local fallback failed (security): ${config.providerId.name} - ${e.message}")
+            }
         }
 
+        // PHASE 3: All providers exhausted
+        android.util.Log.e(TAG, "All providers exhausted. Attempted: ${attemptedProviders.joinToString()}")
+
+        val aggregatedError = buildString {
+            appendLine("All available providers failed:")
+            errors.forEach { appendLine("• $it") }
+        }
+
+        // M-17: Redact API keys from aggregated error message
+        val apiKeyRedaction = ApiKeyRedaction()
+        val redactedErrorMessage = apiKeyRedaction.redact(aggregatedError.trim())
+
         return createFailureResult(
-            task,
-            error.message ?: "Provider out of credits and no fallback provider is available.",
-            executionTimestamp,
-            routingDecision,
-            modelId
+            task = task,
+            reason = redactedErrorMessage,
+            timestamp = executionTimestamp,
+            routingDecision = originalRoutingDecision.copy(
+                reason = "Multi-provider fallback exhausted after ${attemptedProviders.size} attempts",
+                overrideSource = "FallbackExhausted"
+            ),
+            modelId = ModelId("fallback-exhausted"),
+            isRecoverable = false
         )
+    }
+
+    /**
+     * Execute with retry specifically for fallback attempts.
+     * Uses a more conservative retry policy to fail fast during fallback.
+     */
+    private suspend fun executeWithRetryForFallback(
+        task: Task,
+        routingDecision: RoutingDecision,
+        modelId: ModelId
+    ): Result<ExecutionResult> {
+        // Conservative retry for fallback: max 1 retry to fail fast
+        val maxRetries = 1
+        var attempt = 0
+        var lastError: Throwable? = null
+
+        while (attempt <= maxRetries) {
+            attempt++
+            val result = try {
+                attemptExecution(task, routingDecision, modelId)
+            } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                Result.failure(e)
+            }
+
+            if (result.isSuccess) {
+                return result
+            }
+
+            val error = result.exceptionOrNull()
+            lastError = error
+
+            // Don't retry quota errors during fallback
+            if (error is ProviderQuotaException) {
+                return Result.failure(error)
+            }
+
+            // Only retry network errors
+            val isRetriable = isRetriableError(error)
+            if (!isRetriable || attempt > maxRetries) {
+                return Result.failure(error ?: IllegalStateException("Fallback execution failed"))
+            }
+
+            // Short delay for fallback retries
+            delay(500)
+        }
+
+        return Result.failure(lastError ?: IllegalStateException("Fallback execution failed"))
     }
 
     private suspend fun executeLocalProvider(
@@ -343,22 +512,28 @@ class DefaultTaskExecutor @Inject constructor(
             val output = hybridExecutor.execute(task)
             createSuccessResult(task, output, routingDecision, modelId)
         } catch (e: Throwable) {
-            android.util.Log.e(TAG, "LOCAL execution failed (no retry): ${e.message}", e)
+            Log.e(TAG, "LOCAL execution failed (no retry): ${e.message}", e)
+            // M-17: Redact API keys from error messages
+            val apiKeyRedaction = ApiKeyRedaction()
+            val redactedMessage = apiKeyRedaction.redact(e.message ?: "Local execution failed")
+            val redactedError = apiKeyRedaction.redactThrowable(e)
+
             recordProviderError(
-                message = e.message ?: "Local execution failed",
+                message = redactedMessage,
                 providerId = activeConfig.providerId.name,
                 taskId = task.id.id,
                 modelId = modelId.id,
                 routingDecision = routingDecision,
-                cause = e
+                cause = redactedError
             )
-            createFailureResult(task, e.message ?: "Local execution failed", executionTimestamp, routingDecision, modelId)
+            createFailureResult(task, redactedMessage, executionTimestamp, routingDecision, modelId)
         }
     }
 
     private suspend fun disableProvider(providerId: ProviderId) {
         withContext(Dispatchers.IO) {
-            providerRepository.setProviderEnabled(providerId, false)
+            // REPOSITORY ADAPTER CLEANUP: Using ProviderSelector to coordinate with split repositories
+            providerSelector.disableProvider(providerId)
         }
     }
 
@@ -366,16 +541,25 @@ class DefaultTaskExecutor @Inject constructor(
         task: Task,
         routingDecision: RoutingDecision,
         modelId: ModelId
-    ): Result<ExecutionResult> = runCatching {
-        try {
+    ): Result<ExecutionResult> = try {
+        Result.success(try {
             withTimeout(task.budget.timeoutMs.milliseconds) {
                 val output = hybridExecutor.execute(task)
                 createSuccessResult(task, output, routingDecision, modelId)
             }
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            throw e  // Never swallow CancellationException
         } catch (e: Throwable) {
-            android.util.Log.e(TAG, "Caught throwable during execution for task ${task.id}: ${e.javaClass.simpleName} - ${e.message}", e)
-            throw e
-        }
+            Log.e(TAG, "Caught throwable during execution for task ${task.id}: ${e.javaClass.simpleName} - ${e.message}", e)
+            // M-17: Redact API keys from error messages
+            val apiKeyRedaction = ApiKeyRedaction()
+            val redactedError = apiKeyRedaction.redactThrowable(e)
+            throw redactedError
+        })
+    } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+        throw e  // Never swallow CancellationException
+    } catch (e: Throwable) {
+        Result.failure(e)
     }
 
     /**
@@ -404,13 +588,13 @@ class DefaultTaskExecutor @Inject constructor(
     /**
      * Determines the set of capabilities required for a given task type.
      */
-    private fun getCapabilitiesForTaskType(taskType: TaskType): Set<Capability> {
+    private fun getCapabilitiesForTaskType(taskType: TaskType): Set<com.shadowai.app.providers.Capability> {
         return when (taskType) {
-            TaskType.CONVERSATION, TaskType.WRITING, TaskType.VOCAL, TaskType.TEXT_GEN -> setOf(Capability.TEXT)
-            TaskType.IMAGE_GEN -> setOf(Capability.IMAGE_GEN)
-            TaskType.VIDEO_GEN -> setOf(Capability.VISION)
-            TaskType.AUDIO_GEN -> setOf(Capability.VOICE)
-            TaskType.DEVICE_CONTROL, TaskType.TELEPHONY, TaskType.MESSAGING, TaskType.SYSTEM_INTERACTION -> setOf(Capability.FUNCTION_CALLS)
+            TaskType.CONVERSATION, TaskType.WRITING, TaskType.VOCAL, TaskType.TEXT_GEN -> setOf(com.shadowai.app.providers.Capability.TEXT)
+            TaskType.IMAGE_GEN -> setOf(com.shadowai.app.providers.Capability.IMAGE_GEN)
+            TaskType.VIDEO_GEN -> setOf(com.shadowai.app.providers.Capability.VISION)
+            TaskType.AUDIO_GEN -> setOf(com.shadowai.app.providers.Capability.VOICE)
+            TaskType.DEVICE_CONTROL, TaskType.TELEPHONY, TaskType.MESSAGING, TaskType.SYSTEM_INTERACTION -> setOf(com.shadowai.app.providers.Capability.FUNCTION_CALLS)
             else -> emptySet()
         }
     }
@@ -423,6 +607,11 @@ class DefaultTaskExecutor @Inject constructor(
         routingDecision: RoutingDecision,
         cause: Throwable? = null
     ) {
+        // M-17: Redact API keys from error messages to prevent credential exposure
+        val apiKeyRedaction = ApiKeyRedaction()
+        val redactedMessage = apiKeyRedaction.redact(message)
+        val redactedCause = cause?.let { apiKeyRedaction.redactThrowable(it) }
+
         val context = ErrorContext(
             taskId = taskId,
             providerId = providerId,
@@ -437,10 +626,10 @@ class DefaultTaskExecutor @Inject constructor(
         errorContextStore.update(context)
         errorCollector.record(
             PipelineError.ProviderError(
-                message = message,
+                message = redactedMessage,
                 providerId = providerId,
                 context = context,
-                cause = cause
+                cause = redactedCause
             )
         )
     }
@@ -450,17 +639,8 @@ class DefaultTaskExecutor @Inject constructor(
         return task.copy(input = maskedInput)
     }
 
-    /**
-     * Executes a task using the TaskExecutionService for AI model selection and execution.
-     * This method provides a streamlined execution path with proper model selection.
-     */
-    suspend fun executeTask(
-        task: Task,
-        routingDecision: RoutingDecision,
-        providerConfig: ActiveProviderConfig
-    ): String {
-        return taskExecutionService.executeTask(task, routingDecision, providerConfig)
-    }
+    // LEGACY REMOVAL: executeTask method removed - TaskExecutionService no longer used
+    // All execution now flows through HybridAiExecutor using ProviderAdapter architecture
 
     private fun createSuccessResult(
         task: Task,
@@ -484,8 +664,12 @@ class DefaultTaskExecutor @Inject constructor(
         modelId: ModelId,
         isRecoverable: Boolean = true
     ): ExecutionResult {
+        // M-17: Redact API keys from failure reason to prevent credential exposure
+        val apiKeyRedaction = ApiKeyRedaction()
+        val redactedReason = apiKeyRedaction.redact(reason)
+
         val failedTask = task.copy(
-            currentState = TaskState.Failed(reason = reason, timestamp = timestamp, isRecoverable = isRecoverable)
+            currentState = TaskState.Failed(reason = redactedReason, timestamp = timestamp, isRecoverable = isRecoverable)
         )
         return ExecutionResult(task = failedTask, routingDecision = routingDecision, modelId = modelId)
     }

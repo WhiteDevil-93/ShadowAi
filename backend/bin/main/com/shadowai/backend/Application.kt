@@ -58,6 +58,12 @@ fun Application.module() {
         ?: throw IllegalStateException("API key must be configured via 'api.key' property")
     val rateLimitMap = ConcurrentHashMap<String, Pair<Long, Int>>()
 
+    fun firstHeader(headers: Headers, vararg names: String): String? {
+        return names.asSequence()
+            .mapNotNull { headerName -> headers[headerName] }
+            .firstOrNull { headerValue -> headerValue.isNotBlank() }
+    }
+
     /**
      * Simple in-memory rate limiter.  The map is cleaned up lazily when a
      * request is processed.  This keeps the memory footprint small while
@@ -65,6 +71,9 @@ fun Application.module() {
      */
     fun isRateLimited(key: String): Boolean {
         val now = System.currentTimeMillis()
+        if (rateLimitMap.size > 20_000) {
+            rateLimitMap.entries.removeIf { (_, value) -> now - value.first > 60_000 }
+        }
         val entry = rateLimitMap[key]
         if (entry == null || now - entry.first > 60000) {
             rateLimitMap[key] = Pair(now, 1)
@@ -83,6 +92,13 @@ fun Application.module() {
             logger.error("Unhandled exception", cause)
             call.respond(HttpStatusCode.InternalServerError, mapOf("error" to (cause.message ?: "unknown")))
         }
+    }
+
+    environment.monitor.subscribe(ApplicationStopped) {
+        runCatching { taskCache.shutdown() }
+            .onFailure { shutdownError -> logger.warn("Failed to shut down task cache", shutdownError) }
+        runCatching { client.close() }
+            .onFailure { shutdownError -> logger.warn("Failed to close HTTP client", shutdownError) }
     }
 
     routing {
@@ -146,17 +162,45 @@ fun Application.module() {
         }
 
         post("/api/v1/webhook/novita") {
+            if (novitaService == null) {
+                call.respond(HttpStatusCode.ServiceUnavailable, mapOf("error" to "Novita service not configured"))
+                return@post
+            }
+
             val body = call.receiveText()
-            if (!WebhookVerifier.verify(body, call.request.headers["X-Novita-Signature"], novitaConfig.webhookSecret)) {
+            val timestamp = firstHeader(
+                call.request.headers,
+                "X-Novita-Timestamp",
+                "X-Webhook-Timestamp",
+                "X-Timestamp"
+            )
+            val nonce = firstHeader(
+                call.request.headers,
+                "X-Novita-Nonce",
+                "X-Webhook-Nonce",
+                "X-Nonce"
+            )
+            if (!WebhookVerifier.verify(
+                    body = body,
+                    signature = call.request.headers["X-Novita-Signature"],
+                    secret = novitaConfig.webhookSecret,
+                    timestamp = timestamp,
+                    nonce = nonce
+                )
+            ) {
                 call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid signature"))
                 return@post
             }
-            val payload = json.decodeFromString<NovitaWebhookPayload>(body)
+            val payload = runCatching { json.decodeFromString<NovitaWebhookPayload>(body) }
+                .getOrElse {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid payload"))
+                    return@post
+                }
             if (payload.event_type != "ASYNC_TASK_RESULT") {
                 call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Unsupported event"))
                 return@post
             }
-            val updated = novitaService?.processWebhook(payload)
+            val updated = novitaService.processWebhook(payload)
             if (updated == null) {
                 call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown task_id"))
             } else {
@@ -165,17 +209,45 @@ fun Application.module() {
         }
 
         post("/api/v1/webhook/pixai") {
+            if (pixaiService == null) {
+                call.respond(HttpStatusCode.ServiceUnavailable, mapOf("error" to "PixAI service not configured"))
+                return@post
+            }
+
             val body = call.receiveText()
-            if (!WebhookVerifier.verify(body, call.request.headers["X-PixAI-Signature"], pixaiConfig.webhookSecret)) {
+            val timestamp = firstHeader(
+                call.request.headers,
+                "X-PixAI-Timestamp",
+                "X-Webhook-Timestamp",
+                "X-Timestamp"
+            )
+            val nonce = firstHeader(
+                call.request.headers,
+                "X-PixAI-Nonce",
+                "X-Webhook-Nonce",
+                "X-Nonce"
+            )
+            if (!WebhookVerifier.verify(
+                    body = body,
+                    signature = call.request.headers["X-PixAI-Signature"],
+                    secret = pixaiConfig.webhookSecret,
+                    timestamp = timestamp,
+                    nonce = nonce
+                )
+            ) {
                 call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid signature"))
                 return@post
             }
-            val payload = json.decodeFromString<PixAiWebhookPayload>(body)
+            val payload = runCatching { json.decodeFromString<PixAiWebhookPayload>(body) }
+                .getOrElse {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid payload"))
+                    return@post
+                }
             if (payload.event_type != "ASYNC_TASK_RESULT") {
                 call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Unsupported event"))
                 return@post
             }
-            val updated = pixaiService?.processWebhook(payload)
+            val updated = pixaiService.processWebhook(payload)
             if (updated == null) {
                 call.respond(HttpStatusCode.NotFound, mapOf("error" to "Unknown task_id"))
             } else {

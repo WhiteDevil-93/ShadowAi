@@ -20,6 +20,11 @@ package com.shadowai.app.ui.navigation
 import com.shadowai.core.ProviderId
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 /**
  * Navigation routes for ShadowAi using Navigation 3
@@ -35,11 +40,47 @@ import kotlinx.serialization.Serializable
 sealed interface NavigationRoute
 
 /**
- * Chat screen - Home/default destination
- * Normal mode with floating tabs and chat list
+ * Serializer for URI strings (stored as String for serialization)
+ */
+object UriSerializer : KSerializer<android.net.Uri> {
+    override val descriptor = PrimitiveSerialDescriptor("Uri", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: android.net.Uri) = encoder.encodeString(value.toString())
+    override fun deserialize(decoder: Decoder): android.net.Uri = android.net.Uri.parse(decoder.decodeString())
+}
+
+/**
+ * Wrapper for URI that supports serialization
  */
 @Serializable
-data object Chat : NavigationRoute
+data class SerializableUri(
+    @Serializable(with = UriSerializer::class)
+    val uri: android.net.Uri
+)
+
+/**
+ * Chat screen - Home/default destination
+ * Normal mode with floating tabs and chat list
+ * 
+ * @param initialText Optional text pre-filled from Intent Share Sheet
+ * @param imageUris Optional image URIs from Intent Share Sheet
+ */
+@Serializable
+data class Chat(
+    val initialText: String? = null,
+    val imageUris: List<SerializableUri> = emptyList()
+) : NavigationRoute {
+    companion object {
+        fun create(initialText: String? = null, imageUris: List<android.net.Uri> = emptyList()): Chat {
+            return Chat(
+                initialText = initialText,
+                imageUris = imageUris.map { SerializableUri(it) }
+            )
+        }
+        
+        // Default instance for Navigation 3 back stack initialization
+        val Default = Chat()
+    }
+}
 
 /**
  * Provider configuration screen
@@ -110,3 +151,44 @@ data object Diagnostics : NavigationRoute
  */
 @Serializable
 data object HotSwap : NavigationRoute
+
+/**
+ * Security settings screen
+ */
+@Serializable
+data object SecuritySettings : NavigationRoute
+
+/**
+ * Voice settings screen
+ */
+@Serializable
+data object VoiceSettings : NavigationRoute
+
+/**
+ * Chat history screen with biometric protection
+ */
+@Serializable
+data object ChatHistory : NavigationRoute
+
+/**
+ * Model picker screen with quantization display
+ * @param providerId Provider for model selection
+ */
+@Serializable
+data class ModelPicker(val providerId: String) : NavigationRoute {
+    companion object {
+        fun createRoute(providerId: ProviderId): ModelPicker {
+            return ModelPicker(providerId.name.lowercase())
+        }
+    }
+
+    fun toProviderId(): ProviderId {
+        return ProviderId.parseOrNull(providerId) ?: ProviderId.LIQUID
+    }
+}
+
+/**
+ * Voice settings route (alias for consistency)
+ */
+@Serializable
+data object VoiceSettingsRoute : NavigationRoute

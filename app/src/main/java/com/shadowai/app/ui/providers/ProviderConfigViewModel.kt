@@ -9,7 +9,13 @@ import com.shadowai.app.ai.ModelTreeUriConfigurable
 import com.shadowai.app.providers.ModelInfo
 import com.shadowai.app.providers.Provider
 import com.shadowai.core.ProviderId
-import com.shadowai.app.providers.ProviderRepository
+// REPOSITORY ADAPTER CLEANUP: Direct split repository access - facade removed
+import com.shadowai.provideradapters.ProviderCrudRepository
+import com.shadowai.provideradapters.ProviderSecretRepository
+import com.shadowai.provideradapters.ProviderModelRepository
+import com.shadowai.provideradapters.ProviderModelDiscovery
+import com.shadowai.provideradapters.ProviderNetworkTester
+import com.shadowai.core.security.discoveredApiKey
 import com.shadowai.core.security.toSecretBytes
 import com.shadowai.core.LocalInferenceEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +26,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import javax.inject.Inject
+// FIX: Add missing imports
+import com.shadowai.app.providers.ProviderAuth
+import com.shadowai.app.providers.AuthType
+import com.shadowai.app.providers.Capability
 
 data class ProviderConfigUiState(
     val provider: Provider? = null,
@@ -34,7 +44,12 @@ data class ProviderConfigUiState(
 
 @HiltViewModel
 class ProviderConfigViewModel @Inject constructor(
-    private val providerRepository: ProviderRepository,
+    // REPOSITORY ADAPTER CLEANUP: Direct split repository access - facade removed
+    private val crudRepository: ProviderCrudRepository,
+    private val secretRepository: ProviderSecretRepository,
+    private val modelRepository: ProviderModelRepository,
+    private val modelDiscovery: ProviderModelDiscovery,
+    private val networkTester: ProviderNetworkTester,
     private val okHttpClient: OkHttpClient,
     @ApplicationContext private val context: Context,
     private val localInferenceEngine: LocalInferenceEngine
@@ -45,6 +60,8 @@ class ProviderConfigViewModel @Inject constructor(
 
     private var lastTestTime = 0L
     private val TEST_COOLDOWN_MS = 5000L
+
+    // ... (rest of implementation remains similar, but omitting unchanged methods to save tokens)
 
     fun testApiKey(providerId: ProviderId, apiKey: String) {
         val now = System.currentTimeMillis()
@@ -116,8 +133,6 @@ class ProviderConfigViewModel @Inject constructor(
             ProviderId.SILICON_FLOW -> TestEndpoint("https://api.siliconflow.cn/v1/models", mapOf("Authorization" to "Bearer __API_KEY__"))
             ProviderId.NOVITA -> TestEndpoint("https://api.novita.ai/v3/model", mapOf("Authorization" to "Bearer __API_KEY__"))
             ProviderId.PIXAI -> TestEndpoint("https://api.pixai.art/v1/models", mapOf("Authorization" to "Bearer __API_KEY__"))
-// ProviderId.HUGGING_FACE temporarily disabled
-            // ProviderId.HUGGING_FACE -> TestEndpoint("https://api-inference.huggingface.co/models", mapOf("Authorization" to "Bearer __API_KEY__"))
             ProviderId.NOVELAI -> TestEndpoint("https://api.novelai.net/user/information", mapOf("Authorization" to "Bearer __API_KEY__"))
             ProviderId.OLLAMA_CLOUD -> TestEndpoint("http://localhost:11434/api/tags", mapOf("Authorization" to "Bearer __API_KEY__"))
             ProviderId.SIRAY, ProviderId.ATLASCLOUD -> {
@@ -131,38 +146,36 @@ class ProviderConfigViewModel @Inject constructor(
 
     fun loadConfig(providerId: ProviderId) {
         viewModelScope.launch {
-            val provider = providerRepository.getProvider(providerId)
-            val hasSavedApiKey = providerRepository.getApiKey(providerId)?.use { true } ?: false
-            val selectedModels = providerRepository.getSelectedModels(providerId)
-            
-            // Always show default models first (from provider or catalog)
-            val defaultModels = provider?.models ?: emptyList()
-            
+            val provider = crudRepository.getProvider(providerId)?.toAppProvider()
+            val hasSavedApiKey = secretRepository.getApiKey(providerId.name)?.use { _ -> true } ?: false
+            val selectedModels = modelRepository.getSelectedModels(providerId)
+
+            val defaultModels = when (providerId) {
+                ProviderId.LIQUID -> emptyList()
+                else -> provider?.models ?: emptyList()
+            }
+
             _uiState.value = _uiState.value.copy(
                 provider = provider,
                 hasSavedApiKey = hasSavedApiKey,
                 selectedModelIds = selectedModels,
                 availableModels = defaultModels
             )
-            
-            // Restore SAF tree URI if saved in baseUrl
+
             provider?.baseUrl?.let { url ->
                 if (url.startsWith("SAF:")) {
                     val uriString = url.removePrefix("SAF:")
                     try {
                         val uri = Uri.parse(uriString)
-                        // Verify the URI is still accessible before setting it
                         val tree = DocumentFile.fromTreeUri(context, uri)
                         if (tree != null && tree.exists()) {
                             applyModelTreeUri(uri)
                         }
                     } catch (e: Exception) {
-                        // Invalid URI stored, ignore
                     }
                 }
             }
-            
-            // Always call discoverModels - it now returns catalog defaults if no key
+
             discoverModels(providerId)
         }
     }
@@ -185,9 +198,11 @@ class ProviderConfigViewModel @Inject constructor(
     fun saveConfig(providerId: ProviderId, apiKey: String) {
         viewModelScope.launch {
             if (apiKey.isBlank()) {
-                providerRepository.clearApiKey(providerId)
+                secretRepository.clearApiKey(providerId.name)
             } else {
-                providerRepository.saveApiKey(providerId, apiKey.toSecretBytes())
+                discoveredApiKey(apiKey).use { secret ->
+                    secretRepository.saveApiKey(providerId.name, secret)
+                }
             }
             _uiState.value = _uiState.value.copy(hasSavedApiKey = apiKey.isNotBlank())
             loadConfig(providerId)
@@ -196,12 +211,13 @@ class ProviderConfigViewModel @Inject constructor(
 
     fun updateProviderBaseUrl(providerId: ProviderId, baseUrl: String) {
         viewModelScope.launch {
-            val current = providerRepository.getProvider(providerId) ?: return@launch
-            val updated = current.copy(
+            val current = crudRepository.getProvider(providerId) ?: return@launch
+            val appProvider = current.toAppProvider()
+            val updated = appProvider.copy(
                 baseUrl = baseUrl,
-                enabled = if (providerId.isCloud()) current.enabled else (current.enabled || baseUrl.isNotBlank())
+                enabled = if (providerId.isCloud()) appProvider.enabled else (appProvider.enabled || baseUrl.isNotBlank())
             )
-            providerRepository.saveProvider(updated)
+            crudRepository.saveProvider(updated.toCoreProvider())
             loadConfig(providerId)
         }
     }
@@ -210,7 +226,7 @@ class ProviderConfigViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoadingModels = true)
             try {
-                val models = providerRepository.fetchProviderModels(providerId)
+                val models = modelDiscovery.fetchProviderModels(providerId).map { it.toAppModelInfo() }
                 _uiState.value = _uiState.value.copy(
                     availableModels = models,
                     isLoadingModels = false
@@ -232,29 +248,31 @@ class ProviderConfigViewModel @Inject constructor(
             currentSelected.clear()
             currentSelected.add(modelId)
         }
-        
+
         _uiState.value = _uiState.value.copy(selectedModelIds = currentSelected)
         viewModelScope.launch {
-            providerRepository.setSelectedModels(providerId, currentSelected)
+            modelRepository.setSelectedModels(providerId, currentSelected)
+            if (providerId == ProviderId.LIQUID && currentSelected.isNotEmpty()) {
+                val currentProvider = crudRepository.getProvider(providerId)
+                if (currentProvider != null && !currentProvider.enabled) {
+                    crudRepository.saveProvider(currentProvider.copy(enabled = true))
+                }
+            }
         }
     }
 
-    /**
-     * Sets the SAF (Storage Access Framework) tree URI for model access.
-     * This allows accessing models from external storage (Downloads, SD cards) on Android 11+.
-     */
     fun setModelTreeUri(providerId: ProviderId, treeUri: Uri?) {
         if (providerId == ProviderId.LIQUID && treeUri != null) {
             applyModelTreeUri(treeUri)
-            
-            // Also save as provider config so it persists
+
             viewModelScope.launch {
-                val current = providerRepository.getProvider(providerId) ?: return@launch
-                val updated = current.copy(
-                    baseUrl = "SAF:${treeUri}",  // Store URI in baseUrl field
+                val current = crudRepository.getProvider(providerId) ?: return@launch
+                val appProvider = current.toAppProvider()
+                val updated = appProvider.copy(
+                    baseUrl = "SAF:${treeUri}",
                     enabled = true
                 )
-                providerRepository.saveProvider(updated)
+                crudRepository.saveProvider(updated.toCoreProvider())
             }
         }
     }
@@ -266,7 +284,7 @@ class ProviderConfigViewModel @Inject constructor(
     suspend fun testConnection(providerId: ProviderId): Boolean {
         val provider = _uiState.value.provider ?: return false
         _uiState.value = _uiState.value.copy(isTesting = true)
-        val success = providerRepository.testConnection(provider)
+        val success = networkTester.testConnection(provider.toCoreProvider())
         _uiState.value = _uiState.value.copy(isTesting = false, testSuccess = success)
         return success
     }
@@ -277,17 +295,108 @@ class ProviderConfigViewModel @Inject constructor(
             val tempProvider = _uiState.value.provider?.copy(
                  baseUrl = "http://$host:$port/v1"
             ) ?: return@launch
-            
-            val success = providerRepository.testConnection(tempProvider)
-            
+
+            val success = networkTester.testConnection(tempProvider.toCoreProvider())
+
             _uiState.value = _uiState.value.copy(isTesting = false, testSuccess = success)
             if (success) {
-                val models = providerRepository.discoverModels(tempProvider)
+                val models = modelDiscovery.discoverModels(tempProvider.toCoreProvider()).map { it.toAppModelInfo() }
                 _uiState.value = _uiState.value.copy(
                     availableModels = models
                 )
             }
             onResult(success)
         }
+    }
+}
+// Extension functions to convert between Core and App types (from removed facade)
+private fun com.shadowai.core.providers.Provider.toAppProvider(): Provider {
+    return Provider(
+        id = id,
+        name = name,
+        enabled = enabled,
+        baseUrl = baseUrl,
+        auth = ProviderAuth(
+            type = when (auth.type) {
+                com.shadowai.core.providers.AuthType.API_KEY -> AuthType.API_KEY
+                com.shadowai.core.providers.AuthType.OAUTH -> AuthType.OAUTH
+                com.shadowai.core.providers.AuthType.NONE -> AuthType.NONE
+            },
+            credentialAlias = auth.credentialAlias,
+            hasCredential = auth.hasCredential
+        ),
+        capabilities = capabilities.map { it.toAppCapability() }.distinct(),
+        models = models.map { it.toAppModelInfo() },
+        selectedModels = selectedModels,
+        customModels = customModels
+    )
+}
+
+private fun Provider.toCoreProvider(): com.shadowai.core.providers.Provider {
+    return com.shadowai.core.providers.Provider(
+        id = id,
+        name = name,
+        enabled = enabled,
+        baseUrl = baseUrl,
+        auth = com.shadowai.core.providers.ProviderAuth(
+            type = when (auth.type) {
+                AuthType.API_KEY -> com.shadowai.core.providers.AuthType.API_KEY
+                AuthType.OAUTH -> com.shadowai.core.providers.AuthType.OAUTH
+                AuthType.NONE -> com.shadowai.core.providers.AuthType.NONE
+            },
+            credentialAlias = auth.credentialAlias,
+            hasCredential = auth.hasCredential
+        ),
+        capabilities = capabilities.map { it.toCoreCapability() },
+        models = models.map { it.toCoreModelInfo() },
+        selectedModels = selectedModels,
+        customModels = customModels
+    )
+}
+
+private fun com.shadowai.core.providers.ModelInfo.toAppModelInfo(): ModelInfo {
+    return ModelInfo(
+        id = id,
+        displayName = displayName,
+        provider = provider,
+        tier = tier,
+        notes = notes,
+        capabilities = capabilities.map { it.toAppCapability() }.toSet()
+    )
+}
+
+private fun ModelInfo.toCoreModelInfo(): com.shadowai.core.providers.ModelInfo {
+    return com.shadowai.core.providers.ModelInfo(
+        id = id,
+        displayName = displayName,
+        provider = provider,
+        tier = tier,
+        notes = notes,
+        capabilities = capabilities.map { it.toCoreCapability() }.toSet()
+    )
+}
+
+private fun Capability.toCoreCapability(): com.shadowai.core.Capability {
+    return when (this) {
+        Capability.TEXT -> com.shadowai.core.Capability.TEXT
+        Capability.VISION -> com.shadowai.core.Capability.VISION
+        Capability.IMAGE_GEN -> com.shadowai.core.Capability.IMAGE_GEN
+        Capability.FUNCTION_CALLS -> com.shadowai.core.Capability.FUNCTION_CALLING
+        Capability.VOICE -> com.shadowai.core.Capability.AUDIO_SYNTHESIZE
+    }
+}
+
+private fun com.shadowai.core.Capability.toAppCapability(): Capability {
+    return when (this) {
+        com.shadowai.core.Capability.VISION -> Capability.VISION
+        com.shadowai.core.Capability.IMAGE_GEN,
+        com.shadowai.core.Capability.IMAGE_GEN_FAST,
+        com.shadowai.core.Capability.IMAGE_GEN_HIGH_RES,
+        com.shadowai.core.Capability.IMAGE_EDIT -> Capability.IMAGE_GEN
+        com.shadowai.core.Capability.FUNCTION_CALLING -> Capability.FUNCTION_CALLS
+        com.shadowai.core.Capability.AUDIO_TRANSCRIBE,
+        com.shadowai.core.Capability.AUDIO_SYNTHESIZE,
+        com.shadowai.core.Capability.AUDIO_UNDERSTAND -> Capability.VOICE
+        else -> Capability.TEXT
     }
 }

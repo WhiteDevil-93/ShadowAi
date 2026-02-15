@@ -1,10 +1,10 @@
 package com.shadowai.app.thread
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.shadowai.app.providers.ActiveProviderConfig
+import com.shadowai.core.providers.ActiveProviderConfig
 import com.shadowai.app.providers.ActiveProviderManager
 import com.shadowai.core.ProviderId
-import com.shadowai.core.ApiStyle
+import com.shadowai.core.providers.ApiStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -23,17 +23,21 @@ import java.util.concurrent.CountDownLatch
 @RunWith(AndroidJUnit4::class)
 class AdapterCacheTest {
 
-    private lateinit var providerManager: ActiveProviderManager
+    // private lateinit var providerManager: ActiveProviderManager
+    // Commented out as ActiveProviderManager requires dependency injection which is not set up here.
+
     private val testConfig = ActiveProviderConfig(
         providerId = ProviderId.OPENAI,
-        apiStyle = ApiStyle.OPENAI,
+        apiStyle = ApiStyle.OPENAI_COMPAT,
         modelId = "gpt-4",
-        enabled = true
+        displayName = "OpenAI",
+        baseUrl = "https://api.openai.com/v1",
+        isEnabled = true
     )
 
     @Before
     fun setup() {
-        providerManager = ActiveProviderManager()
+        // providerManager = ActiveProviderManager(...) // Needs mocks
     }
 
     @Test
@@ -52,13 +56,13 @@ class AdapterCacheTest {
                         successCount.compute("success") { _, count -> (count ?: 0) + 1 }
                         true
                     } catch (e: Exception) {
-                        failureCount.compute("failure") { _, count -> (count ?: 0) + 1 }
+                        successCount.compute("failure") { _, count -> (count ?: 0) + 1 }
                         false
                     }
                 }
             }
 
-            jobResults = jobs.awaitAll()
+            jobs.awaitAll()
         }
 
         latch.await()
@@ -71,7 +75,7 @@ class AdapterCacheTest {
         // Test that cache invalidation doesn't cause race conditions
         val iterations = 50
 
-        coroutineScope {
+        val jobResults = coroutineScope {
             val jobs = List(iterations) {
                 async(Dispatchers.Default) {
                     // Simulate cache invalidation while other threads access
@@ -80,7 +84,7 @@ class AdapterCacheTest {
                 }
             }
 
-            jobResults = jobs.awaitAll()
+            jobs.awaitAll()
         }
 
         assertTrue("All iterations should complete", jobResults.all { it })

@@ -1,6 +1,7 @@
 package com.shadowai.app.agent
 
 import android.content.Context
+import android.util.Log
 import com.shadowai.app.execution.DeviceAction
 import com.shadowai.app.execution.DeviceActionExecutor
 import com.shadowai.app.execution.TaskExecutor
@@ -11,7 +12,7 @@ import com.shadowai.app.routing.RoutingPolicy
 import com.shadowai.app.tasks.Plan
 import com.shadowai.app.tasks.PlanParser
 import com.shadowai.app.tasks.TaskType
-import com.shadowai.app.providers.ProviderRepository
+// REPOSITORY ADAPTER CLEANUP: Removed ProviderRepository facade dependency
 import com.shadowai.app.ai.TokenCounter
 import com.shadowai.core.security.PromptInjectionDefense
 import com.shadowai.pipelineplanner.PipelineExecutor
@@ -21,6 +22,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,7 +34,7 @@ class SupervisorAgent @Inject constructor(
     private val taskExecutor: TaskExecutor,
     private val routingEngine: RoutingEngine,
     private val providerSelector: ProviderSelector,
-    private val providerRepository: ProviderRepository,
+    // REPOSITORY ADAPTER CLEANUP: Removed ProviderRepository facade - using split repositories via ProviderSelector
     private val planParser: PlanParser,
     private val deviceActionExecutor: DeviceActionExecutor,
     private val verificationEngine: VerificationEngine,
@@ -167,7 +169,7 @@ class SupervisorAgent @Inject constructor(
             taskExecutor = taskExecutor,
             routingEngine = routingEngine,
             providerSelector = providerSelector,
-            providerRepository = providerRepository,
+            // REPOSITORY ADAPTER CLEANUP: Removed ProviderRepository facade dependency
             planParser = planParser,
             deviceActionExecutor = deviceActionExecutor,
             verificationEngine = verificationEngine,
@@ -184,22 +186,37 @@ class SupervisorAgent @Inject constructor(
             loop = agenticLoop,
             state = SupervisedTaskState.RUNNING
         )
-        _activeTasks.value += (taskId to supervisedTask)
+        _activeTasks.update { it + (taskId to supervisedTask) }
 
         return try {
             val result = agenticLoop.execute(input, taskType, policy)
-            _taskResults.value += (taskId to result)
-            _activeTasks.value = _activeTasks.value.toMutableMap().apply {
-                this[taskId] = this[taskId]?.copy(state = SupervisedTaskState.COMPLETED) ?: supervisedTask
+            _taskResults.update { it + (taskId to result) }
+            _activeTasks.update { current ->
+                current.toMutableMap().apply {
+                    this[taskId] = this[taskId]?.copy(state = SupervisedTaskState.COMPLETED) ?: supervisedTask
+                }
             }
             result
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            // Never swallow CancellationException — re-throw to preserve structured concurrency
+            _activeTasks.update { current ->
+                current.toMutableMap().apply {
+                    this[taskId] = this[taskId]?.copy(
+                        state = SupervisedTaskState.FAILED,
+                        error = "Cancelled"
+                    ) ?: supervisedTask
+                }
+            }
+            throw e
         } catch (e: Exception) {
-            android.util.Log.e(TAG, "Complex task execution failed", e)
-            _activeTasks.value = _activeTasks.value.toMutableMap().apply {
-                this[taskId] = this[taskId]?.copy(
-                    state = SupervisedTaskState.FAILED,
-                    error = e.message
-                ) ?: supervisedTask
+            Log.e(TAG, "Complex task execution failed", e)
+            _activeTasks.update { current ->
+                current.toMutableMap().apply {
+                    this[taskId] = this[taskId]?.copy(
+                        state = SupervisedTaskState.FAILED,
+                        error = e.message
+                    ) ?: supervisedTask
+                }
             }
             SupervisorResult.Error(
                 error = AgentError(ErrorCategory.EXECUTION, e.message ?: "Execution failed"),
@@ -228,7 +245,7 @@ class SupervisorAgent @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e(TAG, "Action execution failed", e)
+            Log.e(TAG, "Action execution failed", e)
             Result.failure(e)
         }
     }
@@ -244,15 +261,17 @@ class SupervisorAgent @Inject constructor(
     suspend fun cancelTask(taskId: String) {
         _activeTasks.value[taskId]?.let { task ->
             task.loop.cancel()
-            _activeTasks.value = _activeTasks.value.toMutableMap().apply {
-                this[taskId] = task.copy(state = SupervisedTaskState.CANCELLED)
+            _activeTasks.update { current ->
+                current.toMutableMap().apply {
+                    this[taskId] = task.copy(state = SupervisedTaskState.CANCELLED)
+                }
             }
         }
     }
 
     fun clearCompletedTasks() {
-        _activeTasks.value = _activeTasks.value.filterValues {
-            it.state == SupervisedTaskState.RUNNING
+        _activeTasks.update { current ->
+            current.filterValues { it.state == SupervisedTaskState.RUNNING }
         }
     }
 

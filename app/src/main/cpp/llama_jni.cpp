@@ -27,104 +27,122 @@
 #include "llama.h"
 #include "ggml-cpu.h" // Required for explicit CPU backend registration
 
-namespace {
+namespace
+{
 
-// Holds the state for a loaded model and its context.
-struct LlamaState {
-    llama_model * model = nullptr;
-    llama_context * ctx = nullptr;
-    std::mutex mutex;                     // protects model/context access
-    std::atomic<bool> cancel_requested{false};
-    
-    // Stored params for context recreation
-    uint32_t n_ctx = 4096;
-    uint32_t n_threads = 4;
-    uint32_t n_batch = 512;
-    uint32_t n_ubatch = 512;
-};
+    // Holds the state for a loaded model and its context.
+    struct LlamaState
+    {
+        llama_model *model = nullptr;
+        llama_context *ctx = nullptr;
+        std::mutex mutex; // protects model/context access
+        std::atomic<bool> cancel_requested{false};
 
-JavaVM * gJvm = nullptr;                 // set once in JNI_OnLoad
-std::once_flag gBackendInitFlag;          // llama_backend_init() once
-std::once_flag gJvmInitFlag;              // guard for gJvm usage
+        // Stored params for context recreation
+        uint32_t n_ctx = 4096;
+        uint32_t n_threads = 4;
+        uint32_t n_batch = 512;
+        uint32_t n_ubatch = 512;
+    };
 
-void ensure_backend_init() {
-    std::call_once(gBackendInitFlag, []() {
+    JavaVM *gJvm = nullptr;          // set once in JNI_OnLoad
+    std::once_flag gBackendInitFlag; // llama_backend_init() once
+    std::once_flag gJvmInitFlag;     // guard for gJvm usage
+
+    void ensure_backend_init()
+    {
+        std::call_once(gBackendInitFlag, []()
+                       {
         LOGI("=== SHADOWAI BACKEND INIT START ===");
-        
-        // Register the CPU backend explicitly. 
+
+        // Register the CPU backend explicitly.
         // This is critical for static builds where ggml_backend_load_all() may fail.
         LOGI("Registering GGML CPU backend...");
         ggml_backend_register(ggml_backend_cpu_reg());
-        
+
         LOGI("Initializing llama.cpp core...");
         llama_backend_init();
-        
+
         // Attempt to load any other dynamically linked backends (if any)
         ggml_backend_load_all();
-        
-        LOGI("=== SHADOWAI BACKEND INIT COMPLETE (Device count: %zu) ===", ggml_backend_dev_count());
-    });
-}
 
-void ensure_jvm_init() {
-    std::call_once(gJvmInitFlag, []() {
-        // gJvm is already set by JNI_OnLoad
-    });
-}
-
-// Convert a jstring to std::string.
-std::string jstring_to_string(JNIEnv * env, jstring input) {
-    if (!input) return {};
-    const char * chars = env->GetStringUTFChars(input, nullptr);
-    std::string out = chars ? chars : "";
-    if (chars) env->ReleaseStringUTFChars(input, chars);
-    return out;
-}
-
-// Tokenise a string using the provided vocab.
-std::vector<llama_token> tokenize(const struct llama_vocab * vocab, const std::string & text) {
-    const int32_t n_max = static_cast<int32_t>(text.size()) + 32;
-    std::vector<llama_token> tokens(n_max);
-    int32_t n = llama_tokenize(vocab, text.c_str(), static_cast<int32_t>(text.size()),
-                               tokens.data(), static_cast<int32_t>(tokens.size()), true, true);
-    if (n < 0) {
-        tokens.resize(static_cast<size_t>(-n));
-        n = llama_tokenize(vocab, text.c_str(), static_cast<int32_t>(text.size()),
-                           tokens.data(), static_cast<int32_t>(tokens.size()), true, true);
+        LOGI("=== SHADOWAI BACKEND INIT COMPLETE (Device count: %zu) ===", ggml_backend_dev_count()); });
     }
-    if (n < 0) return {};
-    tokens.resize(static_cast<size_t>(n));
-    return tokens;
-}
 
-// Convert a token back to a string piece.
-std::string token_to_piece(const struct llama_vocab * vocab, llama_token token) {
-    char buffer[256];
-    int32_t n = llama_token_to_piece(vocab, token, buffer, sizeof(buffer), 0, true);
-    if (n <= 0) return {};
-    return std::string(buffer, buffer + n);
-}
+    void ensure_jvm_init()
+    {
+        std::call_once(gJvmInitFlag, []()
+                       {
+                           // gJvm is already set by JNI_OnLoad
+                       });
+    }
 
-// Clamp maxTokens to a safe range.
-int32_t clamp_max_tokens(jint maxTokens) {
-    if (maxTokens <= 0) return 128;
-    if (maxTokens > 4096) return 4096;
-    return static_cast<int32_t>(maxTokens);
-}
+    // Convert a jstring to std::string.
+    std::string jstring_to_string(JNIEnv *env, jstring input)
+    {
+        if (!input)
+            return {};
+        const char *chars = env->GetStringUTFChars(input, nullptr);
+        std::string out = chars ? chars : "";
+        if (chars)
+            env->ReleaseStringUTFChars(input, chars);
+        return out;
+    }
 
-// Helper to create a C-style string on the heap from a std::string
-char* new_c_str(const std::string& s) {
-    char* cstr = new char[s.length() + 1];
-    std::strcpy(cstr, s.c_str());
-    return cstr;
-}
+    // Tokenise a string using the provided vocab.
+    std::vector<llama_token> tokenize(const struct llama_vocab *vocab, const std::string &text)
+    {
+        const int32_t n_max = static_cast<int32_t>(text.size()) + 32;
+        std::vector<llama_token> tokens(n_max);
+        int32_t n = llama_tokenize(vocab, text.c_str(), static_cast<int32_t>(text.size()),
+                                   tokens.data(), static_cast<int32_t>(tokens.size()), true, true);
+        if (n < 0)
+        {
+            tokens.resize(static_cast<size_t>(-n));
+            n = llama_tokenize(vocab, text.c_str(), static_cast<int32_t>(text.size()),
+                               tokens.data(), static_cast<int32_t>(tokens.size()), true, true);
+        }
+        if (n < 0)
+            return {};
+        tokens.resize(static_cast<size_t>(n));
+        return tokens;
+    }
+
+    // Convert a token back to a string piece.
+    std::string token_to_piece(const struct llama_vocab *vocab, llama_token token)
+    {
+        char buffer[256];
+        int32_t n = llama_token_to_piece(vocab, token, buffer, sizeof(buffer), 0, true);
+        if (n <= 0)
+            return {};
+        return std::string(buffer, buffer + n);
+    }
+
+    // Clamp maxTokens to a safe range.
+    int32_t clamp_max_tokens(jint maxTokens)
+    {
+        if (maxTokens <= 0)
+            return 128;
+        if (maxTokens > 4096)
+            return 4096;
+        return static_cast<int32_t>(maxTokens);
+    }
+
+    // Helper to create a C-style string on the heap from a std::string
+    char *new_c_str(const std::string &s)
+    {
+        char *cstr = new char[s.length() + 1];
+        std::strcpy(cstr, s.c_str());
+        return cstr;
+    }
 
 } // namespace
 
 // Forward declarations for JNI functions
-extern "C" {
+extern "C"
+{
     JNIEXPORT jstring JNICALL Java_com_shadowai_app_ai_LlamaNative_nativeGetSystemInfo(JNIEnv *, jclass);
-    JNIEXPORT jlongArray JNICALL Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv *, jclass, jstring, jint, jint);
+    JNIEXPORT jlongArray JNICALL Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv *, jclass, jstring, jint, jint, jboolean, jboolean);
     JNIEXPORT void JNICALL Java_com_shadowai_app_ai_LlamaNative_nativeFreeModel(JNIEnv *, jclass, jlong);
     JNIEXPORT jstring JNICALL Java_com_shadowai_app_ai_LlamaNative_nativeGetString(JNIEnv *, jclass, jlong);
     JNIEXPORT void JNICALL Java_com_shadowai_app_ai_LlamaNative_nativeFreeString(JNIEnv *, jclass, jlong);
@@ -140,69 +158,74 @@ extern "C" {
 }
 
 // Dynamic JNI registration
-static jint registerNativeMethods(JNIEnv * env) {
+static jint registerNativeMethods(JNIEnv *env)
+{
     jclass llamaNativeClass = env->FindClass("com/shadowai/app/ai/LlamaNative");
-    if (!llamaNativeClass) return JNI_ERR;
-    
+    if (!llamaNativeClass)
+        return JNI_ERR;
+
     static const JNINativeMethod kNativeMethods[] = {
         {"nativeGetSystemInfo", "()Ljava/lang/String;",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetSystemInfo)},
-        {"nativeLoadModel", "(Ljava/lang/String;II)[J",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetSystemInfo)},
+        {"nativeLoadModel", "(Ljava/lang/String;IIZZ)[J",
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel)},
         {"nativeFreeModel", "(J)V",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeFreeModel)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeFreeModel)},
         {"nativeGetString", "(J)Ljava/lang/String;",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetString)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetString)},
         {"nativeFreeString", "(J)V",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeFreeString)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeFreeString)},
         {"nativeGenerate", "(JLjava/lang/String;IIFF)Ljava/lang/String;",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGenerate)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGenerate)},
         {"nativeGenerateStream", "(JLjava/lang/String;IIFFLcom/shadowai/app/ai/LlamaNative$GenerationCallback;)V",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream)},
         {"nativeCancel", "(J)V",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeCancel)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeCancel)},
         // Additional native methods for enhanced inference
         {"nativeValidateModel", "(Ljava/lang/String;)Z",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeValidateModel)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeValidateModel)},
         {"nativeGetModelInfo", "(J)Ljava/lang/String;",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetModelInfo)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetModelInfo)},
         {"nativeGetPerformanceMetrics", "(J)[J",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetPerformanceMetrics)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetPerformanceMetrics)},
         {"nativeIsModelLoaded", "(J)Z",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeIsModelLoaded)},
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeIsModelLoaded)},
         {"nativeGetLastError", "()Ljava/lang/String;",
-            reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetLastError)}
-    };
-    
+         reinterpret_cast<void *>(Java_com_shadowai_app_ai_LlamaNative_nativeGetLastError)}};
+
     jint result = env->RegisterNatives(llamaNativeClass, kNativeMethods, sizeof(kNativeMethods) / sizeof(kNativeMethods[0]));
     env->DeleteLocalRef(llamaNativeClass);
     return result;
 }
 
 // JNI_OnLoad
-JNIEXPORT jint JNI_OnLoad(JavaVM * vm, void * /*reserved*/) {
+JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void * /*reserved*/)
+{
     gJvm = vm;
-    JNIEnv * env = nullptr;
-    if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {
+    JNIEnv *env = nullptr;
+    if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK)
+    {
         LOGE("Failed to get JNIEnv in JNI_OnLoad");
         return JNI_ERR;
     }
-    
+
     // Register native methods
-    if (registerNativeMethods(env) != JNI_OK) {
+    if (registerNativeMethods(env) != JNI_OK)
+    {
         LOGE("Failed to register native methods");
         return JNI_ERR;
     }
-    
+
     // Proactively initialize backends on library load
     ensure_backend_init();
-    
+
     return JNI_VERSION_1_6;
 }
 
 // Get system info.
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeGetSystemInfo(JNIEnv* env, jclass /*clazz*/) {
+Java_com_shadowai_app_ai_LlamaNative_nativeGetSystemInfo(JNIEnv *env, jclass /*clazz*/)
+{
     ensure_backend_init();
     std::stringstream ss;
     // ss << "llama.cpp " << llama_build_number() << " | " << llama_system_info();
@@ -212,23 +235,26 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGetSystemInfo(JNIEnv* env, jclass /*c
 
 // Load a model and create a context.
 extern "C" JNIEXPORT jlongArray JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv * env, jclass /*clazz*/, jstring path,
-                                                      jint nCtx, jint nThreads) {
+Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv *env, jclass /*clazz*/, jstring path,
+                                                     jint nCtx, jint nThreads, jboolean useNnapi, jboolean useMmap)
+{
     ensure_backend_init();
     const std::string model_path = jstring_to_string(env, path);
     jlongArray result = env->NewLongArray(2);
-    if (model_path.empty()) {
+    if (model_path.empty())
+    {
         jlong vals[] = {0, reinterpret_cast<jlong>(new_c_str("Model path is empty."))};
         env->SetLongArrayRegion(result, 0, 2, vals);
         return result;
     }
 
-    auto * state = new LlamaState();
-    
+    auto *state = new LlamaState();
+
     // Diagnostic: Check if file is accessible
     LOGI("Attempting to load model from: %s", model_path.c_str());
-    FILE* test_fp = fopen(model_path.c_str(), "rb");
-    if (!test_fp) {
+    FILE *test_fp = fopen(model_path.c_str(), "rb");
+    if (!test_fp)
+    {
         int err = errno;
         std::string error_msg = "Cannot open model file: " + model_path + " (errno=" + std::to_string(err) + ": " + strerror(err) + ")";
         LOGE("%s", error_msg.c_str());
@@ -237,30 +263,32 @@ Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv * env, jclass /*claz
         env->SetLongArrayRegion(result, 0, 2, vals);
         return result;
     }
-    
+
     // Check file size
     fseek(test_fp, 0, SEEK_END);
     long file_size = ftell(test_fp);
     fseek(test_fp, 0, SEEK_SET);
-    
+
     // Read and validate GGUF header
     char magic[4] = {0};
     uint32_t gguf_version = 0;
     size_t bytes_read = fread(magic, 1, 4, test_fp);
-    if (bytes_read == 4) {
+    if (bytes_read == 4)
+    {
         fread(&gguf_version, sizeof(uint32_t), 1, test_fp);
     }
     fclose(test_fp);
-    
+
     LOGI("Model file verified accessible, size=%ld bytes", file_size);
-    LOGI("GGUF header: magic='%c%c%c%c' (0x%02X%02X%02X%02X), version=%u", 
+    LOGI("GGUF header: magic='%c%c%c%c' (0x%02X%02X%02X%02X), version=%u",
          magic[0], magic[1], magic[2], magic[3],
-         (unsigned char)magic[0], (unsigned char)magic[1], 
+         (unsigned char)magic[0], (unsigned char)magic[1],
          (unsigned char)magic[2], (unsigned char)magic[3],
          gguf_version);
-    
+
     // Validate GGUF magic
-    if (magic[0] != 'G' || magic[1] != 'G' || magic[2] != 'U' || magic[3] != 'F') {
+    if (magic[0] != 'G' || magic[1] != 'G' || magic[2] != 'U' || magic[3] != 'F')
+    {
         std::string error_msg = "Invalid GGUF magic: expected 'GGUF', got '";
         error_msg += std::string(magic, 4) + "'. File may be corrupted or not a GGUF model.";
         LOGE("%s", error_msg.c_str());
@@ -269,9 +297,10 @@ Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv * env, jclass /*claz
         env->SetLongArrayRegion(result, 0, 2, vals);
         return result;
     }
-    
+
     // Log GGUF version for diagnostics (supported versions: 2, 3)
-    if (gguf_version < 2 || gguf_version > 3) {
+    if (gguf_version < 2 || gguf_version > 3)
+    {
         std::string error_msg = "Unsupported GGUF version " + std::to_string(gguf_version) + ". ";
         error_msg += "This llama.cpp build supports GGUF v2-v3. ";
         error_msg += "Please either: (1) Update llama.cpp to the latest version, or ";
@@ -282,10 +311,10 @@ Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv * env, jclass /*claz
         env->SetLongArrayRegion(result, 0, 2, vals);
         return result;
     }
-    
-    
+
     // Enable llama.cpp internal logging to capture detailed errors
-    llama_log_set([](enum ggml_log_level level, const char * text, void * user_data) {
+    llama_log_set([](enum ggml_log_level level, const char *text, void *user_data)
+                  {
         switch(level) {
             case GGML_LOG_LEVEL_ERROR:
                 LOGE("llama.cpp ERROR: %s", text);
@@ -299,24 +328,39 @@ Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv * env, jclass /*claz
             default:
                 LOGI("llama.cpp: %s", text);
                 break;
-        }
-    }, nullptr);
-    
+        } }, nullptr);
+
+    // Log requested parameters
+    LOGI("Loading model with requested params: useNnapi=%d, useMmap=%d", useNnapi, useMmap);
+
+    // Note: NNAPI is not implemented in this build. The parameter is accepted for API compatibility
+    // but will be ignored. Future builds may add NNAPI delegation.
+    if (useNnapi)
+    {
+        LOGI("NNAPI requested but not implemented in this build - using CPU backend only");
+    }
+
     llama_model_params model_params = llama_model_default_params();
     model_params.n_gpu_layers = 0;
-    model_params.check_tensors = true;  // Enable tensor validation for better error messages
-    LOGI("Loading model with params: mmap=%d, mlock=%d, check_tensors=%d", 
+    model_params.check_tensors = true; // Enable tensor validation for better error messages
+
+    // Honor the useMmap parameter
+    model_params.use_mmap = useMmap;
+    model_params.use_mlock = false; // Always disable mlock for mobile stability
+
+    LOGI("Loading model with params: mmap=%d, mlock=%d, check_tensors=%d",
          model_params.use_mmap, model_params.use_mlock, model_params.check_tensors);
     state->model = llama_model_load_from_file(model_path.c_str(), model_params);
-    if (!state->model) {
-        LOGI("First load attempt failed, retrying with mmap=false, mlock=false...");
-        // Retry with mmap/lock disabled for devices with restrictive storage or mmap behavior.
+    if (!state->model)
+    {
+        LOGI("Load attempt failed with mmap=%d, retrying with mmap=false...", model_params.use_mmap);
+        // Retry with mmap disabled if the first attempt failed
         llama_model_params fallback_params = model_params;
         fallback_params.use_mmap = false;
-        fallback_params.use_mlock = false;
         state->model = llama_model_load_from_file(model_path.c_str(), fallback_params);
     }
-    if (!state->model) {
+    if (!state->model)
+    {
         std::string error_msg = "llama_model_load_from_file returned null for: " + model_path;
         error_msg += " (GGUF v" + std::to_string(gguf_version) + ", " + std::to_string(file_size) + " bytes). ";
         error_msg += "Possible causes: (1) Model architecture not supported by this llama.cpp build, ";
@@ -335,85 +379,110 @@ Java_com_shadowai_app_ai_LlamaNative_nativeLoadModel(JNIEnv * env, jclass /*claz
     ctx_params.n_ctx = nCtx > 0 ? (uint32_t)nCtx : 4096; // LFM2.5 needs more space
     ctx_params.n_threads = nThreads > 0 ? (uint32_t)nThreads : 4;
     ctx_params.n_threads_batch = ctx_params.n_threads;
-    
+
     // Explicit batch tuning for mobile stability
     ctx_params.n_batch = 512;
     ctx_params.n_ubatch = 512; // Match batch size to avoid ubatch preparation errors
-    
+
     // Save params to state for later recreation
     state->n_ctx = ctx_params.n_ctx;
     state->n_threads = ctx_params.n_threads;
     state->n_batch = ctx_params.n_batch;
     state->n_ubatch = ctx_params.n_ubatch;
-    
+
     state->ctx = llama_init_from_model(state->model, ctx_params);
-    if (!state->ctx) {
+    if (!state->ctx)
+    {
         llama_model_free(state->model);
         delete state;
         jlong vals[] = {0, reinterpret_cast<jlong>(new_c_str("Failed to create context from model."))};
         env->SetLongArrayRegion(result, 0, 2, vals);
         return result;
     }
-    
+
     jlong vals[] = {reinterpret_cast<jlong>(state), 0};
     env->SetLongArrayRegion(result, 0, 2, vals);
     return result;
 }
 
 // Free a loaded model.
+// Acquires the model mutex to prevent use-after-free when a generation
+// thread is still running.
 extern "C" JNIEXPORT void JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeFreeModel(JNIEnv * /*env*/, jclass /*clazz*/, jlong handle) {
-    auto * state = reinterpret_cast<LlamaState *>(handle);
-    if (!state) return;
-    if (state->ctx) {
-        llama_free(state->ctx);
-        state->ctx = nullptr;
-    }
-    if (state->model) {
-        llama_model_free(state->model);
-        state->model = nullptr;
+Java_com_shadowai_app_ai_LlamaNative_nativeFreeModel(JNIEnv * /*env*/, jclass /*clazz*/, jlong handle)
+{
+    auto *state = reinterpret_cast<LlamaState *>(handle);
+    if (!state)
+        return;
+
+    // Signal any in-flight generation to stop so it releases the mutex.
+    state->cancel_requested = true;
+
+    {
+        // Wait for any active generation to finish before freeing resources.
+        std::lock_guard<std::mutex> lock(state->mutex);
+        if (state->ctx)
+        {
+            llama_free(state->ctx);
+            state->ctx = nullptr;
+        }
+        if (state->model)
+        {
+            llama_model_free(state->model);
+            state->model = nullptr;
+        }
     }
     delete state;
 }
 
 // Get string from pointer.
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeGetString(JNIEnv* env, jclass /*clazz*/, jlong ptr) {
-    if (ptr == 0) return nullptr;
-    return env->NewStringUTF(reinterpret_cast<const char*>(ptr));
+Java_com_shadowai_app_ai_LlamaNative_nativeGetString(JNIEnv *env, jclass /*clazz*/, jlong ptr)
+{
+    if (ptr == 0)
+        return nullptr;
+    return env->NewStringUTF(reinterpret_cast<const char *>(ptr));
 }
 
 // Free string pointer.
 extern "C" JNIEXPORT void JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeFreeString(JNIEnv* /*env*/, jclass /*clazz*/, jlong ptr) {
-    if (ptr != 0) {
-        delete[] reinterpret_cast<char*>(ptr);
+Java_com_shadowai_app_ai_LlamaNative_nativeFreeString(JNIEnv * /*env*/, jclass /*clazz*/, jlong ptr)
+{
+    if (ptr != 0)
+    {
+        delete[] reinterpret_cast<char *>(ptr);
     }
 }
 
 // Cancel an ongoing generation.
 extern "C" JNIEXPORT void JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeCancel(JNIEnv * /*env*/, jclass /*clazz*/, jlong handle) {
-    auto * state = reinterpret_cast<LlamaState *>(handle);
-    if (state) state->cancel_requested = true;
+Java_com_shadowai_app_ai_LlamaNative_nativeCancel(JNIEnv * /*env*/, jclass /*clazz*/, jlong handle)
+{
+    auto *state = reinterpret_cast<LlamaState *>(handle);
+    if (state)
+        state->cancel_requested = true;
 }
 
 // Synchronous generation.
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeGenerate(JNIEnv * env, jclass /*clazz*/, jlong handle,
-                                                     jstring prompt, jint maxTokens, jint topK,
-                                                     jfloat topP, jfloat temp) {
-    auto * state = reinterpret_cast<LlamaState *>(handle);
-    if (!state || !state->model || !state->ctx) {
+Java_com_shadowai_app_ai_LlamaNative_nativeGenerate(JNIEnv *env, jclass /*clazz*/, jlong handle,
+                                                    jstring prompt, jint maxTokens, jint topK,
+                                                    jfloat topP, jfloat temp)
+{
+    auto *state = reinterpret_cast<LlamaState *>(handle);
+    if (!state || !state->model || !state->ctx)
+    {
         return env->NewStringUTF("Error: model not loaded.");
     }
     const std::string text = jstring_to_string(env, prompt);
-    if (text.empty()) return env->NewStringUTF("");
+    if (text.empty())
+        return env->NewStringUTF("");
 
     std::lock_guard<std::mutex> lock(state->mutex);
-    
+
     // 🔄 RECREATE CONTEXT: Robust way to clear cache and ensure clean state
-    if (state->ctx) llama_free(state->ctx);
+    if (state->ctx)
+        llama_free(state->ctx);
 
     llama_context_params ctx_params_regen = llama_context_default_params();
     ctx_params_regen.n_ctx = state->n_ctx;
@@ -423,39 +492,47 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerate(JNIEnv * env, jclass /*clazz
     ctx_params_regen.n_ubatch = state->n_ubatch;
 
     state->ctx = llama_init_from_model(state->model, ctx_params_regen);
-    if (!state->ctx) {
-         return env->NewStringUTF("Error: failed to recreate context.");
+    if (!state->ctx)
+    {
+        return env->NewStringUTF("Error: failed to recreate context.");
     }
-    
-    const struct llama_vocab * vocab = llama_model_get_vocab(state->model);
+
+    const struct llama_vocab *vocab = llama_model_get_vocab(state->model);
     std::vector<llama_token> tokens = tokenize(vocab, text);
-    
+
     // Check context window size
     int32_t n_ctx_available = llama_n_ctx(state->ctx);
-    if ((int32_t)tokens.size() > n_ctx_available) {
+    if ((int32_t)tokens.size() > n_ctx_available)
+    {
         return env->NewStringUTF("Error: prompt exceeds context window size.");
     }
-    if (tokens.empty()) return env->NewStringUTF("Error: tokenization failed.");
-    
+    if (tokens.empty())
+        return env->NewStringUTF("Error: tokenization failed.");
+
     // 🧱 Decode in chunks of n_batch for stability
     // 🧱 Decode in chunks of n_batch for stability
     const int32_t n_batch_size = 512;
     llama_batch batch = llama_batch_init(n_batch_size, 0, 1);
-    
-    for (size_t i = 0; i < tokens.size(); i += (size_t)n_batch_size) {
+
+    for (size_t i = 0; i < tokens.size(); i += (size_t)n_batch_size)
+    {
         int32_t n_eval = (int32_t)std::min((size_t)n_batch_size, tokens.size() - i);
-        
+
         // Manual batch setup to ensure safe memory access (avoids pos=NULL crash)
         batch.n_tokens = n_eval;
-        for (int32_t k = 0; k < n_eval; k++) {
+        for (int32_t k = 0; k < n_eval; k++)
+        {
             batch.token[k] = tokens[i + k];
             batch.pos[k] = (int32_t)i + k;
             batch.n_seq_id[k] = 1;
             batch.seq_id[k][0] = 0;
-            batch.logits[k] = false;
+            // Enable logits only for the very last prompt token so sampling
+            // operates on valid data instead of uninitialised memory.
+            batch.logits[k] = (i + k == tokens.size() - 1);
         }
-        
-        if (llama_decode(state->ctx, batch) != 0) {
+
+        if (llama_decode(state->ctx, batch) != 0)
+        {
             llama_batch_free(batch);
             return env->NewStringUTF("Error: decode failed during prompt processing.");
         }
@@ -464,7 +541,7 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerate(JNIEnv * env, jclass /*clazz
     const llama_token eos = llama_vocab_eos(vocab);
     const int32_t max_out = clamp_max_tokens(maxTokens);
     llama_sampler_chain_params chain_params = llama_sampler_chain_default_params();
-    llama_sampler * chain = llama_sampler_chain_init(chain_params);
+    llama_sampler *chain = llama_sampler_chain_init(chain_params);
     llama_sampler_chain_add(chain, llama_sampler_init_top_k(topK > 0 ? topK : 40));
     llama_sampler_chain_add(chain, llama_sampler_init_top_p(topP > 0.0f ? topP : 0.9f, 1));
     llama_sampler_chain_add(chain, llama_sampler_init_temp(temp > 0.0f ? temp : 0.8f));
@@ -475,12 +552,18 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerate(JNIEnv * env, jclass /*clazz
     int32_t n_past = (int32_t)tokens.size();
     llama_batch batch_gen = llama_batch_init(1, 0, 1); // Batch for single token generation
 
-    for (int32_t i = 0; i < max_out; ++i) {
-        if (state->cancel_requested) { state->cancel_requested = false; break; }
+    for (int32_t i = 0; i < max_out; ++i)
+    {
+        if (state->cancel_requested)
+        {
+            state->cancel_requested = false;
+            break;
+        }
         llama_token token = llama_sampler_sample(chain, state->ctx, -1);
-        if (token == eos) break;
+        if (token == eos)
+            break;
         llama_sampler_accept(chain, token);
-        
+
         // Use manual batch to ensure valid pos
         batch_gen.n_tokens = 1;
         batch_gen.token[0] = token;
@@ -488,10 +571,11 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerate(JNIEnv * env, jclass /*clazz
         batch_gen.n_seq_id[0] = 1;
         batch_gen.seq_id[0][0] = 0;
         batch_gen.logits[0] = true; // Enable logits for sampling next token
-        
-        if (llama_decode(state->ctx, batch_gen) != 0) break;
+
+        if (llama_decode(state->ctx, batch_gen) != 0)
+            break;
         n_past++;
-        
+
         std::string piece = token_to_piece(vocab, token);
         output.append(piece);
     }
@@ -502,17 +586,20 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerate(JNIEnv * env, jclass /*clazz
 
 // Validate a model file without loading it.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeValidateModel(JNIEnv * env, jclass /*clazz*/, jstring path) {
+Java_com_shadowai_app_ai_LlamaNative_nativeValidateModel(JNIEnv *env, jclass /*clazz*/, jstring path)
+{
     ensure_backend_init();
     const std::string model_path = jstring_to_string(env, path);
-    if (model_path.empty()) {
+    if (model_path.empty())
+    {
         LOGE("Model path is empty");
         return JNI_FALSE;
     }
 
     // Check if file is accessible
-    FILE* test_fp = fopen(model_path.c_str(), "rb");
-    if (!test_fp) {
+    FILE *test_fp = fopen(model_path.c_str(), "rb");
+    if (!test_fp)
+    {
         int err = errno;
         LOGE("Cannot open model file: %s (errno=%d: %s)", model_path.c_str(), err, strerror(err));
         return JNI_FALSE;
@@ -527,19 +614,22 @@ Java_com_shadowai_app_ai_LlamaNative_nativeValidateModel(JNIEnv * env, jclass /*
     char magic[4] = {0};
     uint32_t gguf_version = 0;
     size_t bytes_read = fread(magic, 1, 4, test_fp);
-    if (bytes_read == 4) {
+    if (bytes_read == 4)
+    {
         fread(&gguf_version, sizeof(uint32_t), 1, test_fp);
     }
     fclose(test_fp);
 
     // Validate GGUF magic
-    if (magic[0] != 'G' || magic[1] != 'G' || magic[2] != 'U' || magic[3] != 'F') {
+    if (magic[0] != 'G' || magic[1] != 'G' || magic[2] != 'U' || magic[3] != 'F')
+    {
         LOGE("Invalid GGUF magic: expected 'GGUF', got '%c%c%c%c'", magic[0], magic[1], magic[2], magic[3]);
         return JNI_FALSE;
     }
 
     // Validate GGUF version
-    if (gguf_version < 2 || gguf_version > 3) {
+    if (gguf_version < 2 || gguf_version > 3)
+    {
         LOGE("Unsupported GGUF version: %u", gguf_version);
         return JNI_FALSE;
     }
@@ -550,9 +640,11 @@ Java_com_shadowai_app_ai_LlamaNative_nativeValidateModel(JNIEnv * env, jclass /*
 
 // Get model information as JSON string.
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeGetModelInfo(JNIEnv * env, jclass /*clazz*/, jlong handle) {
-    auto * state = reinterpret_cast<LlamaState *>(handle);
-    if (!state || !state->model) {
+Java_com_shadowai_app_ai_LlamaNative_nativeGetModelInfo(JNIEnv *env, jclass /*clazz*/, jlong handle)
+{
+    auto *state = reinterpret_cast<LlamaState *>(handle);
+    if (!state || !state->model)
+    {
         return env->NewStringUTF("{\"error\":\"Model not loaded\"}");
     }
 
@@ -570,9 +662,11 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGetModelInfo(JNIEnv * env, jclass /*c
 
 // Get performance metrics for the loaded model.
 extern "C" JNIEXPORT jlongArray JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeGetPerformanceMetrics(JNIEnv * env, jclass /*clazz*/, jlong handle) {
-    auto * state = reinterpret_cast<LlamaState *>(handle);
-    if (!state || !state->model) {
+Java_com_shadowai_app_ai_LlamaNative_nativeGetPerformanceMetrics(JNIEnv *env, jclass /*clazz*/, jlong handle)
+{
+    auto *state = reinterpret_cast<LlamaState *>(handle);
+    if (!state || !state->model)
+    {
         jlong vals[] = {0, 0, 0, 0};
         jlongArray result = env->NewLongArray(4);
         env->SetLongArrayRegion(result, 0, 4, vals);
@@ -584,8 +678,7 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGetPerformanceMetrics(JNIEnv * env, j
         static_cast<jlong>(state->n_ctx),
         static_cast<jlong>(state->n_threads),
         static_cast<jlong>(state->n_batch),
-        static_cast<jlong>(state->n_ubatch)
-    };
+        static_cast<jlong>(state->n_ubatch)};
     jlongArray result = env->NewLongArray(4);
     env->SetLongArrayRegion(result, 0, 4, vals);
     return result;
@@ -593,28 +686,34 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGetPerformanceMetrics(JNIEnv * env, j
 
 // Check if a model is loaded.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeIsModelLoaded(JNIEnv * /*env*/, jclass /*clazz*/, jlong handle) {
-    auto * state = reinterpret_cast<LlamaState *>(handle);
-    if (!state) return JNI_FALSE;
+Java_com_shadowai_app_ai_LlamaNative_nativeIsModelLoaded(JNIEnv * /*env*/, jclass /*clazz*/, jlong handle)
+{
+    auto *state = reinterpret_cast<LlamaState *>(handle);
+    if (!state)
+        return JNI_FALSE;
     return (state->model != nullptr && state->ctx != nullptr) ? JNI_TRUE : JNI_FALSE;
 }
 
 // Get the last error message (placeholder for error tracking).
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeGetLastError(JNIEnv * env, jclass /*clazz*/) {
+Java_com_shadowai_app_ai_LlamaNative_nativeGetLastError(JNIEnv *env, jclass /*clazz*/)
+{
     // In a production implementation, this would return the last error from a thread-local error store
     return env->NewStringUTF("No error");
 }
 
 // Asynchronous streaming generation.
 extern "C" JNIEXPORT void JNICALL
-Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /*clazz*/, jlong handle,
+Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv *env, jclass /*clazz*/, jlong handle,
                                                           jstring prompt, jint maxTokens, jint topK,
-                                                          jfloat topP, jfloat temp, jobject callback) {
-    auto * state = reinterpret_cast<LlamaState *>(handle);
-    if (!state || !state->model || !state->ctx || !callback) return;
+                                                          jfloat topP, jfloat temp, jobject callback)
+{
+    auto *state = reinterpret_cast<LlamaState *>(handle);
+    if (!state || !state->model || !state->ctx || !callback)
+        return;
     const std::string text = jstring_to_string(env, prompt);
-    if (text.empty()) return;
+    if (text.empty())
+        return;
     ensure_jvm_init();
     jobject cb_global = env->NewGlobalRef(callback);
     jclass cb_class = env->GetObjectClass(callback);
@@ -623,7 +722,8 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /
     jmethodID onError = env->GetMethodID(cb_class, "onError", "(Ljava/lang/String;)V");
     env->DeleteLocalRef(cb_class);
     const int32_t max_out = clamp_max_tokens(maxTokens);
-    std::thread([state, text, max_out, topK, topP, temp, cb_global, onToken, onCompleted, onError]() {
+    std::thread([state, text, max_out, topK, topP, temp, cb_global, onToken, onCompleted, onError]()
+                {
         JNIEnv * env_thread = nullptr;
         if (!gJvm || gJvm->AttachCurrentThread(&env_thread, nullptr) != JNI_OK) {
             LOGE("Failed to attach native thread to JVM.");
@@ -643,7 +743,7 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /
 
         try {
             std::lock_guard<std::mutex> lock(state->mutex);
-            
+
             // 🔄 RECREATE CONTEXT: Robust way to clear cache and ensure clean state
             if (state->ctx) llama_free(state->ctx);
 
@@ -658,11 +758,11 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /
             if (!state->ctx) {
                  throw std::runtime_error("Failed to recreate context.");
             }
-            
+
             state->cancel_requested = false;
             const struct llama_vocab * vocab = llama_model_get_vocab(state->model);
             std::vector<llama_token> tokens = tokenize(vocab, text);
-            
+
             // Check context window size
             int32_t n_ctx_available = llama_n_ctx(state->ctx);
             if ((int32_t)tokens.size() > n_ctx_available) {
@@ -671,14 +771,14 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /
             if (tokens.empty()) {
                 throw std::runtime_error("Tokenization failed.");
             }
-            
+
             // 🧱 Decode in chunks of n_batch for stability
             const int32_t n_batch_size = 512;
             llama_batch batch = llama_batch_init(n_batch_size, 0, 1);
-            
+
             for (size_t i = 0; i < tokens.size(); i += (size_t)n_batch_size) {
                 int32_t n_eval = (int32_t)std::min((size_t)n_batch_size, tokens.size() - i);
-                
+
                 // Manual batch setup
                 batch.n_tokens = n_eval;
                 for (int32_t k = 0; k < n_eval; k++) {
@@ -686,7 +786,9 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /
                     batch.pos[k] = (int32_t)i + k;
                     batch.n_seq_id[k] = 1;
                     batch.seq_id[k][0] = 0;
-                    batch.logits[k] = false;
+                    // Enable logits only for the very last prompt token so sampling
+                    // operates on valid data instead of uninitialised memory.
+                    batch.logits[k] = (i + k == tokens.size() - 1);
                 }
 
                 if (llama_decode(state->ctx, batch) != 0) {
@@ -702,18 +804,18 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /
             llama_sampler_chain_add(chain, llama_sampler_init_top_p(topP > 0.0f ? topP : 0.9f, 1));
             llama_sampler_chain_add(chain, llama_sampler_init_temp(temp > 0.0f ? temp : 0.8f));
             llama_sampler_chain_add(chain, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
-            
+
             // Generation loop with explicit position tracking
             int32_t n_past = (int32_t)tokens.size();
             llama_batch batch_gen = llama_batch_init(1, 0, 1); // Batch for single token generation
-            
+
             bool error_during_loop = false;
             for (int32_t i = 0; i < max_out; ++i) {
                 if (state->cancel_requested) { state->cancel_requested = false; break; }
                 llama_token token = llama_sampler_sample(chain, state->ctx, -1);
                 if (token == eos) break;
                 llama_sampler_accept(chain, token);
-                
+
                 // Use manual batch to ensure valid pos
                 batch_gen.n_tokens = 1;
                 batch_gen.token[0] = token;
@@ -721,13 +823,13 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /
                 batch_gen.n_seq_id[0] = 1;
                 batch_gen.seq_id[0][0] = 0;
                 batch_gen.logits[0] = true;
-                
+
                 if (llama_decode(state->ctx, batch_gen) != 0) {
                     error_during_loop = true;
                     break;
                 }
                 n_past++;
-                
+
                 const std::string piece = token_to_piece(vocab, token);
                 if (!piece.empty()) {
                     jstring out = env_thread->NewStringUTF(piece.c_str());
@@ -753,6 +855,6 @@ Java_com_shadowai_app_ai_LlamaNative_nativeGenerateStream(JNIEnv * env, jclass /
             env_thread->DeleteLocalRef(msg);
         }
 
-        cleanup();
-    }).detach();
+        cleanup(); })
+        .detach();
 }

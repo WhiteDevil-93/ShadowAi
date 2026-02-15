@@ -1,4 +1,4 @@
-package com.shadowai.app.auth
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              package com.shadowai.app.auth
 
 import android.app.Activity
 import android.content.Context
@@ -31,15 +31,15 @@ import javax.inject.Singleton
 
 /**
  * Manages Google authentication using the AndroidX Credentials API.
- * 
+ *
  * MIGRATED FROM: Legacy Google Sign-In (play-services-auth)
  * TO: AndroidX Credentials API with Google ID Credential
- * 
+ *
  * The Credential Manager provides a unified sign-in API that supports:
  * - Passkeys (FIDO2)
  * - Google Sign-In
  * - Password-based sign-in
- * 
+ *
  * Benefits over legacy Google Sign-In:
  * - No Play Services dependency issues
  * - Consistent UX across Android versions
@@ -51,7 +51,7 @@ class GoogleAuthManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val firebaseAuth = FirebaseAuth.getInstance()
-    
+
     /**
      * CredentialManager instance for handling all credential operations.
      * This replaces the legacy GoogleSignInClient.
@@ -60,10 +60,10 @@ class GoogleAuthManager @Inject constructor(
 
     /**
      * Initiates Google Sign-In using the Credentials API.
-     * 
+     *
      * This method creates a credential request with Google ID option and
      * launches the Credential Manager UI for user selection.
-     * 
+     *
      * @param activity The calling activity for the credential request
      * @return Result containing the FirebaseUser on success, or exception on failure
      */
@@ -71,7 +71,7 @@ class GoogleAuthManager @Inject constructor(
         return try {
             // Generate a nonce for security (prevents replay attacks)
             val nonce = generateNonce()
-            
+
             // Create the Google ID option
             val googleIdOption = GetGoogleIdOption.Builder()
                 // Request the server's client ID (from google-services.json)
@@ -106,7 +106,7 @@ class GoogleAuthManager @Inject constructor(
 
     /**
      * Handles the credential response from Credential Manager.
-     * 
+     *
      * @param result The GetCredentialResponse from Credential Manager
      * @return Result containing the FirebaseUser on success
      */
@@ -115,17 +115,17 @@ class GoogleAuthManager @Inject constructor(
 
         return when {
             // Check if it's a Google ID token credential
-            credential is CustomCredential && 
+            credential is CustomCredential &&
             credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL -> {
                 try {
                     // Parse the Google ID token credential
                     val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                    
+
                     // Authenticate with Firebase using the Google ID token
                     val idToken = googleIdTokenCredential.idToken
                     val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
                     val authResult = firebaseAuth.signInWithCredential(firebaseCredential).await()
-                    
+
                     authResult.user?.let { user ->
                         Result.success(user)
                     } ?: Result.failure(Exception("Firebase authentication returned null user"))
@@ -147,7 +147,7 @@ class GoogleAuthManager @Inject constructor(
 
     /**
      * Signs out from both Firebase and clears credential state.
-     * 
+     *
      * Note: Since the Credentials API doesn't maintain a persistent session
      * like the legacy Google Sign-In, we only need to sign out from Firebase.
      * The Credential Manager state can be cleared for completeness.
@@ -156,7 +156,7 @@ class GoogleAuthManager @Inject constructor(
         return try {
             // Sign out from Firebase
             firebaseAuth.signOut()
-            
+
             // Clear the credential state (optional, for completeness)
             try {
                 credentialManager.clearCredentialState(
@@ -166,7 +166,7 @@ class GoogleAuthManager @Inject constructor(
                 // Non-fatal: clearing credential state is optional
                 e.printStackTrace()
             }
-            
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -201,7 +201,7 @@ class GoogleAuthManager @Inject constructor(
     /**
      * Retrieves the Google ID token from a previous authentication.
      * This is useful for backend verification.
-     * 
+     *
      * @return The Google ID token if available, null otherwise
      */
     suspend fun getGoogleIdToken(activity: Activity): Result<String> {
@@ -222,7 +222,7 @@ class GoogleAuthManager @Inject constructor(
             )
 
             val credential = result.credential
-            if (credential is CustomCredential && 
+            if (credential is CustomCredential &&
                 credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                 Result.success(googleIdTokenCredential.idToken)

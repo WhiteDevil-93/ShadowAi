@@ -3,6 +3,7 @@ package com.shadowai.hotswapping
 import com.shadowai.core.ProviderId
 import com.shadowai.core.security.SecretBytes
 import com.shadowai.provideradapters.ProviderAdapterConfig
+import java.util.Arrays
 
 /**
  * Supported config formats for hot-swap definitions.
@@ -29,10 +30,18 @@ data class ProviderConfig(
      * Converts configuration to adapter config.
      */
     fun toAdapterConfig(): ProviderAdapterConfig {
+        val secret = apiKeySecret?.let { rawSecret ->
+            val rawBytes = rawSecret.toByteArray(Charsets.UTF_8)
+            try {
+                SecretBytes.fromByteArray(rawBytes)
+            } finally {
+                Arrays.fill(rawBytes, 0.toByte())
+            }
+        }
         return ProviderAdapterConfig(
             providerId = providerId,
             baseUrl = baseUrl,
-            apiKeySecret = apiKeySecret?.let { SecretBytes.fromByteArray(it.toByteArray()) },
+            apiKeySecret = secret,
             modelId = modelId
         )
     }

@@ -164,7 +164,7 @@ class ModelRegistry {
             // Prefer models with more total capabilities (more versatile)
             { it.capabilities.size },
             // Prefer lower latency for fast tasks
-            { getPerformanceProfile(it.metadata).latencyScore }
+            { it.performanceProfile.latencyScore }
         ))
     }
 
@@ -282,35 +282,73 @@ class ModelRegistry {
 
     private fun extractSemanticId(model: ModelDescriptor): String {
         // Extract semantic ID from metadata if available
-        return model.metadata["semanticId"] as? String
-            ?: extractSemanticFromModelId(model.id)
-    }
-
-    private fun extractSemanticFromModelId(modelId: String): String {
-        // Normalize model ID to semantic form
-        // e.g., "gpt-4-turbo-2024-04-09" -> "gpt-4"
-        // e.g., "claude-3-opus-20240229" -> "claude-3"
-        return when {
-            modelId.startsWith("gpt-4") -> "gpt-4"
-            modelId.startsWith("gpt-3.5") -> "gpt-3.5"
-            modelId.startsWith("claude-3") -> {
-                when {
-                    modelId.contains("opus") -> "claude-3-opus"
-                    modelId.contains("sonnet") -> "claude-3-sonnet"
-                    modelId.contains("haiku") -> "claude-3-haiku"
-                    else -> "claude-3"
-                }
-            }
-            modelId.startsWith("llama") -> "llama"
-            modelId.contains("mistral") -> "mistral"
-            modelId.contains("gemini") -> "gemini"
-            else -> modelId.split("-").take(2).joinToString("-")
+        return model.semanticId.ifBlank {
+            extractSemanticFromModelId(model.id)
         }
     }
 
-    private fun getPerformanceProfile(metadata: Map<String, Any>): PerformanceProfile {
-        return metadata["performance"] as? PerformanceProfile
-            ?: PerformanceProfile()
+    /** M-1: Model ID generation fix - centralize semantic ID logic
+     *  Delegates to ModelDescriptor.getEffectiveSemanticId() for consistency
+     *  This ensures semantic ID generation is centralized and consistent
+     *  across the entire model-catalog module.
+     */
+    private fun extractSemanticFromModelId(modelId: String): String {
+        return extractSemanticId(modelId)
+    }
+
+    /**
+     * M-1: Centralized semantic ID extraction - static utility method
+     * This should be used as the single source of truth for semantic ID generation.
+     * Moved the extraction logic from ModelRegistry to be a companion method
+     * that can be used consistently across the codebase.
+     */
+    companion object {
+        /**
+         * Extract semantic ID from a model ID string.
+         * Centralized logic used by both ModelRegistry and ModelDescriptor.
+         *
+         * @param modelId The model ID to extract from (e.g., "gpt-4-turbo-2024-04-09")
+         * @return The semantic ID (e.g., "gpt-4")
+         */
+        fun extractSemanticId(modelId: String): String {
+            // Normalize model ID to semantic form
+            // e.g., "gpt-4-turbo-2024-04-09" -> "gpt-4"
+            // e.g., "claude-3-opus-20240229" -> "claude-3"
+            return when {
+                modelId.startsWith("gpt-4") -> "gpt-4"
+                modelId.startsWith("gpt-3.5") -> "gpt-3.5"
+                modelId.startsWith("claude-3") -> {
+                    when {
+                        modelId.contains("opus") -> "claude-3-opus"
+                        modelId.contains("sonnet") -> "claude-3-sonnet"
+                        modelId.contains("haiku") -> "claude-3-haiku"
+                        else -> "claude-3"
+                    }
+                }
+                modelId.startsWith("llama") -> extractLlamaVersion(modelId)
+                modelId.contains("mistral") -> "mistral"
+                modelId.contains("gemini") -> extractGeminiVersion(modelId)
+                else -> modelId.split("-").take(2).joinToString("-")
+            }
+        }
+
+        private fun extractLlamaVersion(id: String): String {
+            // Extract llama version from strings like "llama-3-8b-instruct"
+            val parts = id.split("-")
+            val versionIndex = parts.indexOfFirst { it.startsWith("llama") }
+            return if (versionIndex >= 0 && versionIndex + 1 < parts.size) {
+                "${parts[versionIndex]}-${parts[versionIndex + 1]}"
+            } else "llama"
+        }
+
+        private fun extractGeminiVersion(id: String): String {
+            return when {
+                id.contains("pro") -> "gemini-pro"
+                id.contains("flash") -> "gemini-flash"
+                id.contains("ultra") -> "gemini-ultra"
+                else -> "gemini"
+            }
+        }
     }
 
     private fun ModelDescriptor.hasCapability(capability: Capability): Boolean {

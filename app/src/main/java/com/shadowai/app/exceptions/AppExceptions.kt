@@ -3,259 +3,142 @@ package com.shadowai.app.exceptions
 import java.io.IOException
 
 /**
- * Domain-specific exception hierarchy for better error handling.
- *
- * Use these instead of bare `catch(Exception)` blocks to:
- * 1. Catch only specific, recoverable errors
- * 2. Provide better error messages to users
- * 3. Enable proper error recovery strategies
- * 4. Improve debugging with specific exception types
+ * Base interface for app exceptions with context support.
  */
+interface AppException {
+    val context: String?
+    fun withContext(newContext: ExceptionMapper.ExceptionContext?): AppException
+}
 
 // ============================================
 // Network Exceptions
 // ============================================
 
-/**
- * Base class for all network-related errors
- */
-sealed class NetworkException(message: String, cause: Throwable? = null) : IOException(message, cause) {
+sealed class NetworkException(
+    message: String,
+    cause: Throwable? = null,
+    override val context: String? = null
+) : IOException(message, cause), AppException {
 
-    /**
-     * Request timed out
-     */
-    class Timeout(cause: Throwable? = null) : NetworkException("Request timeout", cause)
+    class Timeout(cause: Throwable? = null, override val context: String? = null) : NetworkException("Request timeout", cause, context)
+    class NoConnection(cause: Throwable? = null, override val context: String? = null) : NetworkException("No network connection", cause, context)
+    class ServerError(val code: Int, message: String? = null, cause: Throwable? = null, override val context: String? = null) : NetworkException(message ?: "Server error: HTTP $code", cause, context)
+    class ConnectionError(message: String, cause: Throwable? = null, override val context: String? = null) : NetworkException(message, cause, context)
+    class TimeoutError(message: String, cause: Throwable? = null, override val context: String? = null) : NetworkException(message, cause, context)
+    class UnknownError(message: String, cause: Throwable? = null, override val context: String? = null) : NetworkException(message, cause, context)
+    class InvalidResponse(message: String, cause: Throwable? = null, val httpCode: Int? = null, override val context: String? = null) : NetworkException("Invalid response: $message", cause, context)
+    class RateLimitExceeded(val retryAfterSeconds: Int? = null, cause: Throwable? = null, override val context: String? = null) : NetworkException("Rate limit exceeded", cause, context)
 
-    /**
-     * No network connection available
-     */
-    class NoConnection(cause: Throwable? = null) : NetworkException("No network connection", cause)
-
-    /**
-     * Server returned an error (4xx, 5xx)
-     */
-    class ServerError(val code: Int, message: String? = null, cause: Throwable? = null)
-        : NetworkException(message ?: "Server error: HTTP $code", cause)
-
-    /**
-     * Invalid or malformed response from server
-     */
-    class InvalidResponse(message: String, cause: Throwable? = null)
-        : NetworkException("Invalid response: $message", cause)
-
-    /**
-     * API rate limit exceeded
-     */
-    class RateLimitExceeded(val retryAfterSeconds: Int? = null, cause: Throwable? = null)
-        : NetworkException("Rate limit exceeded${retryAfterSeconds?.let { ", retry after ${it}s" } ?: ""}", cause)
+    override fun withContext(newContext: ExceptionMapper.ExceptionContext?): NetworkException {
+        val newCtx = newContext?.toSummary() ?: context
+        return when (this) {
+            is Timeout -> Timeout(cause, newCtx)
+            is NoConnection -> NoConnection(cause, newCtx)
+            is ServerError -> ServerError(code, message, cause, newCtx)
+            is InvalidResponse -> InvalidResponse(message ?: "", cause, httpCode, newCtx)
+            is RateLimitExceeded -> RateLimitExceeded(retryAfterSeconds, cause, newCtx)
+            is ConnectionError -> ConnectionError(message ?: "", cause, newCtx)
+            is TimeoutError -> TimeoutError(message ?: "", cause, newCtx)
+            is UnknownError -> UnknownError(message ?: "", cause, newCtx)
+        }
+    }
 }
 
 // ============================================
 // Model/AI Exceptions
 // ============================================
 
-/**
- * Base class for model/AI-related errors
- */
 sealed class ModelException(message: String, cause: Throwable? = null) : Exception(message, cause) {
-
-    /**
-     * Failed to load model file
-     */
-    class LoadFailed(val modelPath: String, cause: Throwable? = null)
-        : ModelException("Failed to load model: $modelPath", cause)
-
-    /**
-     * Model file is invalid or corrupted
-     */
-    class InvalidModel(val modelPath: String, val reason: String, cause: Throwable? = null)
-        : ModelException("Invalid model $modelPath: $reason", cause)
-
-    /**
-     * Inference/generation failed
-     */
-    class InferenceFailed(message: String, cause: Throwable? = null)
-        : ModelException("Inference failed: $message", cause)
-
-    /**
-     * Insufficient memory to load model
-     */
-    class InsufficientMemory(val requiredMB: Long, val availableMB: Long)
-        : ModelException("Insufficient memory: need ${requiredMB}MB, have ${availableMB}MB")
-
-    /**
-     * Model not found
-     */
-    class NotFound(val modelPath: String)
-        : ModelException("Model not found: $modelPath")
+    class LoadFailed(val modelPath: String, cause: Throwable? = null) : ModelException("Failed to load model: $modelPath", cause)
+    class InvalidModel(val modelPath: String, val reason: String, cause: Throwable? = null) : ModelException("Invalid model $modelPath: $reason", cause)
+    class InferenceFailed(message: String, cause: Throwable? = null) : ModelException("Inference failed: $message", cause)
+    class InsufficientMemory(val requiredMB: Long, val availableMB: Long) : ModelException("Insufficient memory")
+    class NotFound(val modelPath: String) : ModelException("Model not found: $modelPath")
 }
 
 // ============================================
 // Security/Encryption Exceptions
 // ============================================
 
-/**
- * Base class for security-related errors
- */
 sealed class SecurityException(message: String, cause: Throwable? = null) : Exception(message, cause) {
-
-    /**
-     * Encryption operation failed
-     */
-    class EncryptionFailed(message: String, cause: Throwable? = null)
-        : SecurityException("Encryption failed: $message", cause)
-
-    /**
-     * Decryption operation failed
-     */
-    class DecryptionFailed(message: String, cause: Throwable? = null)
-        : SecurityException("Decryption failed: $message", cause)
-
-    /**
-     * Key generation failed
-     */
-    class KeyGenerationFailed(val keyType: String, cause: Throwable? = null)
-        : SecurityException("Failed to generate $keyType key", cause)
-
-    /**
-     * Invalid or corrupted key
-     */
-    class InvalidKey(message: String, cause: Throwable? = null)
-        : SecurityException("Invalid key: $message", cause)
-
-    /**
-     * Authentication failed
-     */
-    class AuthenticationFailed(message: String, cause: Throwable? = null)
-        : SecurityException("Authentication failed: $message", cause)
-
-    /**
-     * Permission denied
-     */
-    class PermissionDenied(val permission: String, cause: Throwable? = null)
-        : SecurityException("Permission denied: $permission", cause)
+    class EncryptionFailed(message: String, cause: Throwable? = null) : SecurityException("Encryption failed: $message", cause)
+    class DecryptionFailed(message: String, cause: Throwable? = null) : SecurityException("Decryption failed: $message", cause)
+    class KeyGenerationFailed(val keyType: String, cause: Throwable? = null) : SecurityException("Failed to generate $keyType key", cause)
+    class InvalidKey(message: String, cause: Throwable? = null) : SecurityException("Invalid key: $message", cause)
+    class AuthenticationFailed(message: String, cause: Throwable? = null) : SecurityException("Authentication failed: $message", cause)
+    class PermissionDenied(val permission: String, cause: Throwable? = null) : SecurityException("Permission denied: $permission", cause)
 }
 
 // ============================================
 // Storage/Database Exceptions
 // ============================================
 
-/**
- * Base class for storage-related errors
- */
-sealed class StorageException(message: String, cause: Throwable? = null) : IOException(message, cause) {
+sealed class StorageException(
+    message: String,
+    cause: Throwable? = null,
+    override val context: String? = null
+) : IOException(message, cause), AppException {
 
-    /**
-     * File not found
-     */
-    class FileNotFound(val path: String, cause: Throwable? = null)
-        : StorageException("File not found: $path", cause)
+    class FileNotFound(val path: String, cause: Throwable? = null, val operation: String? = null, override val context: String? = null) : StorageException("File not found: $path", cause, context)
+    class InsufficientSpace(val requiredBytes: Long, val availableBytes: Long, override val context: String? = null) : StorageException("Insufficient space", context = context)
+    class ReadFailed(val path: String, cause: Throwable? = null, val operation: String? = null, override val context: String? = null) : StorageException("Failed to read: $path", cause, context)
+    class WriteFailed(val path: String, cause: Throwable? = null, val operation: String? = null, override val context: String? = null) : StorageException("Failed to write: $path", cause, context)
+    class DatabaseError(message: String, cause: Throwable? = null, override val context: String? = null) : StorageException("Database error: $message", cause, context)
+    class PermissionDenied(val path: String, cause: Throwable? = null, val operation: String? = null, override val context: String? = null) : StorageException("Permission denied: $path", cause, context)
 
-    /**
-     * Insufficient disk space
-     */
-    class InsufficientSpace(val requiredBytes: Long, val availableBytes: Long)
-        : StorageException("Insufficient space: need ${requiredBytes / 1024 / 1024}MB, have ${availableBytes / 1024 / 1024}MB")
-
-    /**
-     * Read operation failed
-     */
-    class ReadFailed(val path: String, cause: Throwable? = null)
-        : StorageException("Failed to read: $path", cause)
-
-    /**
-     * Write operation failed
-     */
-    class WriteFailed(val path: String, cause: Throwable? = null)
-        : StorageException("Failed to write: $path", cause)
-
-    /**
-     * Database operation failed
-     */
-    class DatabaseError(message: String, cause: Throwable? = null)
-        : StorageException("Database error: $message", cause)
+    override fun withContext(newContext: ExceptionMapper.ExceptionContext?): StorageException {
+        val newCtx = newContext?.toSummary() ?: context
+        return when (this) {
+            is FileNotFound -> FileNotFound(path, cause, operation, newCtx)
+            is InsufficientSpace -> InsufficientSpace(requiredBytes, availableBytes, newCtx)
+            is ReadFailed -> ReadFailed(path, cause, operation, newCtx)
+            is WriteFailed -> WriteFailed(path, cause, operation, newCtx)
+            is DatabaseError -> DatabaseError(message ?: "", cause, newCtx)
+            is PermissionDenied -> PermissionDenied(path, cause, operation, newCtx)
+        }
+    }
 }
 
 // ============================================
 // Parsing/Validation Exceptions
 // ============================================
 
-/**
- * Base class for parsing/validation errors
- */
-sealed class ParseException(message: String, cause: Throwable? = null) : Exception(message, cause) {
+sealed class ParseException(
+    message: String,
+    cause: Throwable? = null,
+    override val context: String? = null
+) : Exception(message, cause), AppException {
 
-    /**
-     * JSON parsing failed
-     */
-    class InvalidJson(message: String, cause: Throwable? = null)
-        : ParseException("Invalid JSON: $message", cause)
+    class InvalidJson(message: String, cause: Throwable? = null, val contentSample: String? = null, override val context: String? = null) : ParseException("Invalid JSON: $message", cause, context)
+    class SchemaViolation(val errors: List<String>, override val context: String? = null) : ParseException("Schema validation failed", context = context)
+    class InvalidFormat(val expected: String, val actual: String, cause: Throwable? = null, override val context: String? = null) : ParseException("Invalid format", cause, context)
 
-    /**
-     * Schema validation failed
-     */
-    class SchemaViolation(val errors: List<String>)
-        : ParseException("Schema validation failed: ${errors.joinToString(", ")}")
-
-    /**
-     * Invalid data format
-     */
-    class InvalidFormat(val expected: String, val actual: String, cause: Throwable? = null)
-        : ParseException("Invalid format: expected $expected, got $actual", cause)
+    override fun withContext(newContext: ExceptionMapper.ExceptionContext?): ParseException {
+        val newCtx = newContext?.toSummary() ?: context
+        return when (this) {
+            is InvalidJson -> InvalidJson(message ?: "", cause, contentSample, newCtx)
+            is SchemaViolation -> SchemaViolation(errors, newCtx)
+            is InvalidFormat -> InvalidFormat(expected, actual, cause, newCtx)
+        }
+    }
 }
 
 // ============================================
 // Configuration Exceptions
 // ============================================
 
-/**
- * Base class for configuration errors
- */
 sealed class ConfigurationException(message: String, cause: Throwable? = null) : Exception(message, cause) {
-
-    /**
-     * Missing required configuration
-     */
-    class MissingConfig(val key: String)
-        : ConfigurationException("Missing required configuration: $key")
-
-    /**
-     * Invalid configuration value
-     */
-    class InvalidConfig(val key: String, val value: String, val reason: String)
-        : ConfigurationException("Invalid configuration for $key='$value': $reason")
-
-    /**
-     * Provider not configured
-     */
-    class ProviderNotConfigured(val providerId: String)
-        : ConfigurationException("Provider not configured: $providerId")
+    class MissingConfig(val key: String) : ConfigurationException("Missing configuration: $key")
+    class InvalidConfig(val key: String, val value: String, val reason: String) : ConfigurationException("Invalid configuration")
+    class ProviderNotConfigured(val providerId: String) : ConfigurationException("Provider not configured")
 }
 
 // ============================================
 // Resource Exceptions
 // ============================================
 
-/**
- * Base class for resource-related errors
- */
 sealed class ResourceException(message: String, cause: Throwable? = null) : Exception(message, cause) {
-
-    /**
-     * Resource not available
-     */
-    class NotAvailable(val resource: String, val reason: String)
-        : ResourceException("Resource not available: $resource ($reason)")
-
-    /**
-     * Resource exhausted
-     */
-    class Exhausted(val resource: String)
-        : ResourceException("Resource exhausted: $resource")
-
-    /**
-     * Resource busy/locked
-     */
-    class Busy(val resource: String, cause: Throwable? = null)
-        : ResourceException("Resource busy: $resource", cause)
+    class NotAvailable(val resource: String, val reason: String) : ResourceException("Resource not available")
+    class Exhausted(val resource: String) : ResourceException("Resource exhausted")
+    class Busy(val resource: String, cause: Throwable? = null) : ResourceException("Resource busy", cause)
 }

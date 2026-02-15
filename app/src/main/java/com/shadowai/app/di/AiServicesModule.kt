@@ -8,6 +8,7 @@ import com.shadowai.app.providers.ProviderFallbackManager
 import com.shadowai.core.security.PiiMaskingProcessor
 import com.shadowai.pipelineplanner.PipelineExecutor
 import com.shadowai.pipelineplanner.PipelinePlanner
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,54 +21,11 @@ import javax.inject.Singleton
  */
 @Module
 @InstallIn(SingletonComponent::class)
-object AiServicesModule {
+abstract class AiServicesModule {
+    // HybridAiExecutor has @Inject constructor — Hilt auto-provides it.
+    // No @Binds needed unless binding to a supertype interface.
 
-    @Provides
-    @Singleton
-    fun provideTaskExecutionService(
-        providerFallbackManager: ProviderFallbackManager,
-        localBrainManager: LocalBrainManager,
-        adapterBridge: AdapterBridge
-    ): TaskExecutionService {
-        return TaskExecutionService(
-            providerFallbackManager,
-            localBrainManager,
-            adapterBridge
-        )
+    companion object {
+        // TaskExecutionService is deleted.
     }
-
-    @Provides
-    @Singleton
-    fun provideHybridAiExecutor(
-        localBrainManager: LocalBrainManager,
-        adminRepository: AdminRepository,
-        memoryManager: MemoryManager,
-        promptManager: PromptManager,
-        adapterBridge: AdapterBridge,
-        heuristicParser: HeuristicActionParser,
-        pipelinePlanner: PipelinePlanner,
-        safetySettingsManager: com.shadowai.app.ai.SafetySettingsManager,
-        piiMaskingProcessor: PiiMaskingProcessor,
-        gson: com.google.gson.Gson,
-        pipelineExecutor: PipelineExecutor,
-        adapterProviderExecutor: AdapterProviderExecutor
-    ): HybridAiExecutor {
-        return HybridAiExecutor(
-            localBrainManager,
-            adminRepository,
-            memoryManager,
-            promptManager,
-            adapterBridge,
-            heuristicParser,
-            pipelinePlanner,
-            safetySettingsManager,
-            piiMaskingProcessor,
-            gson,
-            pipelineExecutor,
-            adapterProviderExecutor
-        )
-    }
-
-    // TaskExecutor and RoutingEngine are provided via @Binds in AppBindings
-    // LocalLlmExecutor and CloudLlmExecutor are now deprecated and their provides methods removed.
 }

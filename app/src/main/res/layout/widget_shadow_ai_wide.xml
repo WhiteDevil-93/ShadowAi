@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wide Widget Layout (4x2) - Full conversation preview with quick actions -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <!-- Left Section: App Icon & Quick Actions -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:layout_marginEnd="12dp">
+
+        <!-- App Icon / Logo Area -->
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@mipmap/ic_launcher_foreground"
+            android:background="@drawable/widget_voice_button_background"
+            android:contentDescription="@string/app_name"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Voice Input Button -->
+        <FrameLayout
+            android:id="@+id/widget_voice_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:background="@drawable/widget_voice_button_background">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_btn_speak_now"
+                android:contentDescription="Start voice input"
+                android:tint="@android:color/white" />
+        </FrameLayout>
+
+        <!-- Settings Button -->
+        <ImageButton
+            android:id="@+id/widget_settings_button"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_preferences"
+            android:contentDescription="Widget settings"
+            android:tint="@android:color/darker_gray" />
+    </LinearLayout>
+
+    <!-- Right Section: Message Preview -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+        <!-- Conversation Title -->
+        <TextView
+            android:id="@+id/widget_conversation_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Shadow AI"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Last Message Preview Container -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_inner_background"
+            android:padding="8dp">
+
+            <!-- Last Message Text (when available) -->
+            <TextView
+                android:id="@+id/widget_message_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                android:maxLines="4"
+                android:ellipsize="end"
+                android:visibility="gone" />
+
+            <!-- Empty State -->
+            <TextView
+                android:id="@+id/widget_empty_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/widget_no_messages"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:visibility="visible" />
+        </FrameLayout>
+
+        <!-- Timestamp -->
+        <TextView
+            android:id="@+id/widget_timestamp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp"
+            android:text=""
+            android:textColor="@android:color/darker_gray"
+            android:textSize="10sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+</LinearLayout>

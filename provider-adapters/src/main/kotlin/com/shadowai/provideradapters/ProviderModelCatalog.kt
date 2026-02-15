@@ -256,6 +256,14 @@ object ProviderModelCatalog {
             setOf(Capability.TEXT),
             "siray-1",
             "siray-2"
+        ),
+
+        ProviderId.LIQUID to modelList(
+            ProviderId.LIQUID,
+            setOf(Capability.TEXT),
+            "LFM2.5-1.2B-Thinking-Q4_K_M.gguf",
+            "LFM2.5-1.2B-Thinking-Q8_0.gguf",
+            "LFM2.5-1.2B-Instruct-BF16.gguf"
         )
     )
 

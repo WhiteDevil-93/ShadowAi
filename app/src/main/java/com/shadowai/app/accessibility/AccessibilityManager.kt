@@ -63,8 +63,12 @@ class AccessibilityManager(private val context: Context) {
             serviceInfoList.forEach { serviceInfo ->
                 enabledServices.add(serviceInfo.resolveInfo.serviceInfo.packageName)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get enabled accessibility services", e)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception accessing accessibility services", e)
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Accessibility service in invalid state", e)
+        } catch (e: NullPointerException) {
+            Log.e(TAG, "Null service info encountered", e)
         }
         
         return enabledServices

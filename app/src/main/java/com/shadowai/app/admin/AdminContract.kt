@@ -88,4 +88,77 @@ data class GenerationSettings(
     val filterSelfHarm: Boolean = true,
     val blocklist: List<String> = emptyList(),
     val allowlist: List<String> = emptyList()
-)
+) {
+    companion object {
+        // Valid ranges for settings that must be between 0.0 and 1.0
+        const val TEMPERATURE_MIN = 0.0
+        const val TEMPERATURE_MAX = 1.0
+        const val TOP_P_MIN = 0.0
+        const val TOP_P_MAX = 1.0
+        const val PRESENCE_PENALTY_MIN = 0.0
+        const val PRESENCE_PENALTY_MAX = 1.0
+        
+        // Repetition penalty typically ranges from 1.0 (no penalty) to 2.0
+        const val REPETITION_PENALTY_MIN = 1.0
+        const val REPETITION_PENALTY_MAX = 2.0
+    }
+
+    /**
+     * Validates all settings are within their defined bounds.
+     * @return ValidationResult indicating if the settings are valid and any error messages.
+     */
+    fun validate(): ValidationResult {
+        val errors = mutableListOf<String>()
+        
+        if (temperature !in TEMPERATURE_MIN..TEMPERATURE_MAX) {
+            errors.add("Temperature must be between $TEMPERATURE_MIN and $TEMPERATURE_MAX")
+        }
+        
+        if (topP !in TOP_P_MIN..TOP_P_MAX) {
+            errors.add("TopP must be between $TOP_P_MIN and $TOP_P_MAX")
+        }
+        
+        if (presencePenalty !in PRESENCE_PENALTY_MIN..PRESENCE_PENALTY_MAX) {
+            errors.add("Presence penalty must be between $PRESENCE_PENALTY_MIN and $PRESENCE_PENALTY_MAX")
+        }
+        
+        if (repetitionPenalty !in REPETITION_PENALTY_MIN..REPETITION_PENALTY_MAX) {
+            errors.add("Repetition penalty must be between $REPETITION_PENALTY_MIN and $REPETITION_PENALTY_MAX")
+        }
+        
+        if (maxTokens < 1) {
+            errors.add("Max tokens must be at least 1")
+        }
+        
+        if (topK < 1) {
+            errors.add("TopK must be at least 1")
+        }
+        
+        return if (errors.isEmpty()) {
+            ValidationResult.Valid
+        } else {
+            ValidationResult.Invalid(errors)
+        }
+    }
+    
+    /**
+     * Creates a new GenerationSettings with all values clamped to their valid ranges.
+     */
+    fun clamped(): GenerationSettings {
+        return copy(
+            temperature = temperature.coerceIn(TEMPERATURE_MIN, TEMPERATURE_MAX),
+            topP = topP.coerceIn(TOP_P_MIN, TOP_P_MAX),
+            presencePenalty = presencePenalty.coerceIn(PRESENCE_PENALTY_MIN, PRESENCE_PENALTY_MAX),
+            repetitionPenalty = repetitionPenalty.coerceIn(REPETITION_PENALTY_MIN, REPETITION_PENALTY_MAX),
+            maxTokens = maxTokens.coerceAtLeast(1),
+            topK = topK.coerceAtLeast(1)
+        )
+    }
+    
+    sealed class ValidationResult {
+        object Valid : ValidationResult()
+        data class Invalid(val errors: List<String>) : ValidationResult()
+        
+        val isValid: Boolean get() = this is Valid
+    }
+}

@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import com.shadowai.app.BuildConfig
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -30,7 +31,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class ErrorHandler @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     companion object {
         private const val TAG = "ErrorHandler"

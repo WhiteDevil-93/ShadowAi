@@ -2,16 +2,20 @@ package com.shadowai.app.ai
 
 import android.util.Log
 import java.io.Closeable
-import java.lang.ref.WeakReference
+// H-3: Removed WeakReference import - now using LifecycleManagedCallback with strong references
 import java.util.concurrent.atomic.AtomicLong
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Kotlin wrapper for llama.cpp JNI functions.
  *
  * This class provides a clean API for loading GGUF models and generating text
  * using the native llama.cpp library.
+ *
+ * Implements ILlamaEngine to allow dependency injection without circular dependencies.
  */
-class LlamaNative {
+class LlamaNative @Inject constructor() : ILlamaEngine {
 
     companion object {
         private const val TAG = "LlamaNative"
@@ -25,14 +29,20 @@ class LlamaNative {
         private var libraryState = LibraryState.UNINITIALIZED
 
         init {
-            loadLibrary()
+            // Note: We don't load library in static initializer anymore
+            // This prevents wrong process context issues with isolated inference
+            // Library loading is now handled by LocalInferenceManager
+            Log.d(TAG, "LlamaNative companion initialized (library not yet loaded)")
         }
 
         /**
          * Attempt to load the llama_jni native library.
          * Returns true if successful, false otherwise.
+         *
+         * This method is now called explicitly rather than in static initializer
+         * to ensure proper process context for isolated inference.
          */
-        private fun loadLibrary(): Boolean = synchronized(this) {
+        fun loadLibraryIfNeeded(): Boolean = synchronized(this) {
             when (libraryState) {
                 LibraryState.LOADED -> return true
                 LibraryState.FAILED -> return false
@@ -63,13 +73,17 @@ class LlamaNative {
         }
 
         /**
-         * Force reload the native library (useful for testing).
+         * Force reload the native library (useful for testing or process context switching).
          * @return true if library is now available
+         *
+         * Note: Android does not support unloading native libraries. This method
+         * resets state tracking but the native library remains loaded. For isolated
+         * inference processes, a new process is created with its own library instance.
          */
         fun reloadLibrary(): Boolean = synchronized(this) {
             libraryState = LibraryState.UNINITIALIZED
             _isAvailable = false
-            return loadLibrary()
+            return loadLibraryIfNeeded()
         }
 
         private enum class LibraryState {
@@ -97,6 +111,8 @@ class LlamaNative {
          * @param modelPath Absolute path to the model file
          * @param nCtx Context size (default 2048)
          * @param nThreads Number of threads
+         * @param useNnapi Whether to use NNAPI delegation for NPU acceleration
+         * @param useMmap Whether to use memory-mapped file loading
          * @return A LongArray containing [handle, errorMsgPtr].
          *         handle is the model handle, or 0 on failure.
          *         errorMsgPtr is a pointer to a C-string with an error message, or 0.
@@ -105,7 +121,9 @@ class LlamaNative {
         external fun nativeLoadModel(
             modelPath: String,
             nCtx: Int,
-            nThreads: Int
+            nThreads: Int,
+            useNnapi: Boolean,
+            useMmap: Boolean
         ): LongArray
 
         /**
@@ -184,10 +202,58 @@ class LlamaNative {
          */
         @JvmStatic
         external fun nativeCancel(handle: Long)
+
+        /**
+         * Validate a model file without loading it.
+         *
+         * @param modelPath Absolute path to the model file
+         * @return true if valid GGUF file, false otherwise
+         */
+        @JvmStatic
+        external fun nativeValidateModel(modelPath: String): Boolean
+
+        /**
+         * Get model information as JSON string.
+         *
+         * @param handle Model handle from nativeLoadModel
+         * @return JSON string with model info
+         */
+        @JvmStatic
+        external fun nativeGetModelInfo(handle: Long): String
+
+        /**
+         * Get performance metrics for the loaded model.
+         *
+         * @param handle Model handle from nativeLoadModel
+         * @return LongArray with metrics [context_size, threads, batch_size, ubatch_size]
+         */
+        @JvmStatic
+        external fun nativeGetPerformanceMetrics(handle: Long): LongArray
+
+        /**
+         * Check if a model is loaded.
+         *
+         * @param handle Model handle from nativeLoadModel
+         * @return true if model is loaded and ready
+         */
+        @JvmStatic
+        external fun nativeIsModelLoaded(handle: Long): Boolean
+
+        /**
+         * Get the last error message.
+         *
+         * @return Error message string or "No error"
+         */
+        @JvmStatic
+        external fun nativeGetLastError(): String
     }
 
     private fun checkAvailability() {
-        if (!_isAvailable) {
+        // Try to load the library if not already loaded
+        if (!isLoaded()) {
+            loadLibraryIfNeeded()
+        }
+        if (!isLoaded()) {
             throw IllegalStateException(
                 "Native library 'llama_jni' is not available. " +
                 "Check if the native library is properly built and included in the APK. " +
@@ -199,14 +265,21 @@ class LlamaNative {
     /**
      * Check if the native library is loaded and available.
      */
-    fun isLoaded(): Boolean {
+    override fun isLoaded(): Boolean {
         return _isAvailable && libraryState == LibraryState.LOADED
+    }
+
+    /**
+     * Attempt to load the native library.
+     */
+    override fun loadLibraryIfNeeded(): Boolean {
+        return LlamaNative.loadLibraryIfNeeded()
     }
 
     /**
      * Get detailed status information for debugging.
      */
-    fun getStatus(): Map<String, Any> {
+    override fun getStatus(): Map<String, Any> {
         return mapOf(
             "isAvailable" to _isAvailable,
             "libraryLoaded" to (libraryState == LibraryState.LOADED),
@@ -223,16 +296,22 @@ class LlamaNative {
      * @param config Generation configuration
      * @return ModelHandle or null if loading failed
      */
-    fun loadModel(
+    override fun loadModel(
         modelPath: String,
-        config: GenerationConfig = GenerationConfig()
+        config: GenerationConfig
     ): ModelHandle? {
         checkAvailability()
 
         val nThreads = config.nThreads.takeIf { it > 0 }
             ?: Runtime.getRuntime().availableProcessors().let { if (it > 1) it - 1 else 1 }
 
-        val result = nativeLoadModel(modelPath, config.nCtx, nThreads)
+        val result = nativeLoadModel(
+            modelPath,
+            config.nCtx,
+            nThreads,
+            config.useNnapi,
+            config.useMmap
+        )
         if (result.size < 2) {
             Log.e(TAG, "nativeLoadModel returned malformed result: size=${result.size}")
             return null
@@ -254,7 +333,9 @@ class LlamaNative {
             return null
         }
 
-        Log.i(TAG, "Successfully loaded model from: $modelPath")
+        val mmapStatus = if (config.useMmap) "memory-mapped" else "fully loaded"
+        val nnapiStatus = if (config.useNnapi) "with NNAPI" else "CPU-only"
+        Log.i(TAG, "Successfully loaded model from: $modelPath ($mmapStatus, $nnapiStatus)")
         return ModelHandle(handle, modelPath)
     }
 
@@ -266,25 +347,26 @@ class LlamaNative {
      * @param config Generation configuration
      * @return Generated text, or error message starting with "Error:"
      */
-    fun generate(handle: ModelHandle, prompt: String, config: GenerationConfig = GenerationConfig()): String {
+    override fun generate(handle: ModelHandle, prompt: String, config: GenerationConfig): String {
         checkAvailability()
         if (!handle.isValid()) {
             throw LlamaGenerationException("Invalid/freed handle")
         }
 
-        // Medium #11: Unbounded Native String mitigation
-        // Non-streaming generation with very high token counts can cause native OOM or JVM JNI string allocation failures.
-        val maxTokens = if (config.maxTokens > 512) {
-            Log.w(TAG, "Large maxTokens (${config.maxTokens}) requested for non-streaming generation. Capping to 512 to avoid OOM. Use generateStream for longer outputs.")
-            512
-        } else {
-            config.maxTokens
+        // H-4 FIX: Fail fast instead of silently truncating output length.
+        // Callers can switch to generateStream for long outputs.
+        if (config.maxTokens > 512) {
+            throw TokenLimitException(
+                message = "maxTokens=${config.maxTokens} exceeds non-streaming limit (512). Use generateStream for larger outputs.",
+                requestedTokens = config.maxTokens,
+                maxContext = 512
+            )
         }
 
         val generated = nativeGenerate(
             handle.nativeHandle,
             prompt,
-            maxTokens,
+            config.maxTokens,
             config.topK,
             config.topP,
             config.temp
@@ -298,15 +380,21 @@ class LlamaNative {
     /**
      * Generate text with streaming callback.
      *
+     * H-3 FIX: Uses strong reference with lifecycle management instead of WeakReference.
+     * The callback is held strongly but automatically cleaned up when:
+     * 1. Generation completes (onCompleted/onError called)
+     * 2. Explicit cancellation via cancel()
+     * 3. Model handle is freed
+     *
      * @param handle Model handle from loadModel
      * @param prompt Input prompt
      * @param config Generation configuration
-     * @param callback Callback for streaming tokens
+     * @param callback Callback for streaming tokens - held with strong reference
      */
-    fun generateStream(
+    override fun generateStream(
         handle: ModelHandle,
         prompt: String,
-        config: GenerationConfig = GenerationConfig(),
+        config: GenerationConfig,
         callback: GenerationCallback
     ) {
         checkAvailability()
@@ -314,7 +402,16 @@ class LlamaNative {
             callback.onError("Invalid/freed handle")
             return
         }
-        val weakCallback = WeakGenerationCallback(callback)
+
+        // H-3: Use LifecycleManagedCallback instead of WeakReference
+        val managedCallback = LifecycleManagedCallback(handle, callback) { activeCallbacks }
+        callbackMutex.lock()
+        try {
+            activeCallbacks[handle.nativeHandle] = managedCallback
+        } finally {
+            callbackMutex.unlock()
+        }
+
         nativeGenerateStream(
             handle.nativeHandle,
             prompt,
@@ -322,9 +419,13 @@ class LlamaNative {
             config.topK,
             config.topP,
             config.temp,
-            weakCallback
+            managedCallback
         )
     }
+
+    @Volatile
+    private var activeCallbacks = java.util.concurrent.ConcurrentHashMap<Long, LifecycleManagedCallback>()
+    private val callbackMutex = java.util.concurrent.locks.ReentrantLock()
 
     // =====================
     // Helper Methods
@@ -333,12 +434,67 @@ class LlamaNative {
     /**
      * Cancel an ongoing streaming generation for a model handle.
      *
+     * H-3: Also removes the callback from the active callbacks map to prevent
+     * memory leaks and ensure proper lifecycle cleanup.
+     *
      * @param handle Model handle from loadModel
      */
-    fun cancel(handle: ModelHandle) {
+    override fun cancel(handle: ModelHandle) {
         checkAvailability()
         if (handle.isValid()) {
             nativeCancel(handle.nativeHandle)
+
+            // H-3: Clean up the callback
+            callbackMutex.lock()
+            try {
+                activeCallbacks.remove(handle.nativeHandle)
+            } finally {
+                callbackMutex.unlock()
+            }
+        }
+    }
+
+    /**
+     * H-3: Lifecycle-managed callback that holds strong reference to the actual callback
+     * but automatically cleans up when generation ends or is cancelled.
+     */
+    private inner class LifecycleManagedCallback(
+        private val handle: ModelHandle,
+        private val actualCallback: GenerationCallback,
+        private val activeCallbackMap: () -> MutableMap<Long, LifecycleManagedCallback>
+    ) : GenerationCallback {
+        @Volatile
+        private var isCompleted = false
+
+        override fun onToken(token: String) {
+            if (!isCompleted) {
+                actualCallback.onToken(token)
+            }
+        }
+
+        override fun onCompleted() {
+            if (!isCompleted) {
+                isCompleted = true
+                actualCallback.onCompleted()
+                cleanup()
+            }
+        }
+
+        override fun onError(message: String) {
+            if (!isCompleted) {
+                isCompleted = true
+                actualCallback.onError(message)
+                cleanup()
+            }
+        }
+
+        private fun cleanup() {
+            callbackMutex.lock()
+            try {
+                activeCallbackMap().remove(handle.nativeHandle)
+            } finally {
+                callbackMutex.unlock()
+            }
         }
     }
 
@@ -402,7 +558,11 @@ class LlamaNative {
         /** Top-P sampling parameter (default: 0.9, 0.0-1.0) */
         val topP: Float = 0.9f,
         /** Temperature for sampling (default: 0.8, 0.0-2.0) */
-        val temp: Float = 0.8f
+        val temp: Float = 0.8f,
+        /** Use NNAPI delegation for NPU acceleration (default: false) */
+        val useNnapi: Boolean = false,
+        /** Use memory-mapped file loading (default: true) */
+        val useMmap: Boolean = true
     ) {
         companion object {
             /** Fast generation preset */
@@ -411,7 +571,9 @@ class LlamaNative {
                 maxTokens = 64,
                 topK = 20,
                 topP = 0.8f,
-                temp = 0.7f
+                temp = 0.7f,
+                useNnapi = false,
+                useMmap = true
             )
 
             /** Quality generation preset */
@@ -420,7 +582,9 @@ class LlamaNative {
                 maxTokens = 256,
                 topK = 60,
                 topP = 0.95f,
-                temp = 0.9f
+                temp = 0.9f,
+                useNnapi = true,
+                useMmap = true
             )
 
             /** Creative generation preset */
@@ -429,7 +593,9 @@ class LlamaNative {
                 maxTokens = 200,
                 topK = 0, // disabled for more randomness
                 topP = 0.9f,
-                temp = 1.2f
+                temp = 1.2f,
+                useNnapi = false,
+                useMmap = false
             )
         }
     }
@@ -444,20 +610,15 @@ class LlamaNative {
     }
 
     class LlamaGenerationException(message: String) : RuntimeException(message)
-
-    private class WeakGenerationCallback(callback: GenerationCallback) : GenerationCallback {
-        private val callbackRef = WeakReference(callback)
-
-        override fun onToken(token: String) {
-            callbackRef.get()?.onToken(token)
-        }
-
-        override fun onCompleted() {
-            callbackRef.get()?.onCompleted()
-        }
-
-        override fun onError(message: String) {
-            callbackRef.get()?.onError(message)
-        }
-    }
+    // H-3: Removed WeakGenerationCallback - now using LifecycleManagedCallback with strong references
 }
+
+/**
+ * H-4: Token limit exception for generation context overflow.
+ * Thrown when input would be silently truncated by the native layer.
+ */
+class TokenLimitException(
+    message: String,
+    val requestedTokens: Int,
+    val maxContext: Int
+) : IllegalArgumentException(message)

@@ -43,14 +43,14 @@ private:
     std::atomic<jlong> next_handle_{1};
 
 public:
-    jlong registerModel(std::unique_ptr<LlamaContext> ctx) {
+    jlong registerModel(std::unique_ptr<LlamaContextState> ctx) {
         std::lock_guard<std::mutex> lock(mutex_);
         jlong handle = next_handle_++;
         contexts_[handle] = std::move(ctx);
         return handle;
     }
 
-    LlamaContext* getModel(jlong handle) {
+    LlamaContextState* getModel(jlong handle) {
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = contexts_.find(handle);
         return (it != contexts_.end()) ? it->second.get() : nullptr;
@@ -64,6 +64,20 @@ public:
 
 static ModelRegistry g_model_registry;
 static JavaVM* g_vm = nullptr;
+
+static inline void set_batch_token(
+    llama_batch& batch,
+    int index,
+    llama_token token,
+    int position,
+    bool logits
+) {
+    batch.token[index] = token;
+    batch.pos[index] = position;
+    batch.n_seq_id[index] = 1;
+    batch.seq_id[index][0] = 0;
+    batch.logits[index] = (int)logits; // Explicit cast to avoid narrowing conversion warning
+}
 
 // ==================== JNI Helpers ====================
 
@@ -111,7 +125,7 @@ Java_com_shadowai_inference_NativeBridge_nativeLoadModel(
     std::string path = jstring_to_str(env, modelPath);
     LOGI("Loading model: %s", path.c_str());
 
-    auto state = std::make_unique<LlamaContext>();
+    auto state = std::make_unique<LlamaContextState>();
     state->model_path = path;
 
     llama_model_params mparams = llama_model_default_params();
@@ -127,8 +141,8 @@ Java_com_shadowai_inference_NativeBridge_nativeLoadModel(
 
     llama_context_params cparams = llama_context_default_params();
     cparams.n_ctx = contextSize > 0 ? contextSize : 2048;
-    cparams.n_threads = threads > 0 ? threads : std::thread::hardware_concurrency();
-    cparams.n_threads_batch = cparams.n_threads;
+    cparams.n_threads = (int)(threads > 0 ? threads : std::thread::hardware_concurrency()); // Cast to int
+    cparams.n_threads_batch = (int)cparams.n_threads; // Cast to int
 
     state->ctx = llama_init_from_model(state->model, cparams);
     if (!state->ctx) {
@@ -137,7 +151,7 @@ Java_com_shadowai_inference_NativeBridge_nativeLoadModel(
     }
 
     jlong handle = g_model_registry.registerModel(std::move(state));
-    LOGI("Model loaded successfully, handle: %lld", handle);
+    LOGI("Model loaded successfully, handle: %ld", static_cast<long>(handle));
     return handle;
 }
 
@@ -151,7 +165,7 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerate(
     JNIEnv* env, jobject thiz, jlong handle, jstring prompt,
     jint maxTokens, jfloat temp, jfloat topP, jint topK, jfloat repeatPenalty
 ) {
-    LlamaContext* state = g_model_registry.getModel(handle);
+    LlamaContextState* state = g_model_registry.getModel(handle);
     if (!state) return nullptr;
 
     std::string prompt_str = jstring_to_str(env, prompt);
@@ -159,19 +173,24 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerate(
 
     const llama_vocab* vocab = llama_model_get_vocab(state->model);
     std::vector<llama_token> tokens(prompt_str.size() + 32);
-    int n_tokens = llama_tokenize(vocab, prompt_str.c_str(), prompt_str.size(), tokens.data(), tokens.size(), true, true);
+    int n_tokens = (int)llama_tokenize(vocab, prompt_str.c_str(), prompt_str.size(), tokens.data(), tokens.size(), true, true); // Cast result to int
     if (n_tokens < 0) return nullptr;
     tokens.resize(n_tokens);
 
-    llama_batch batch = llama_batch_init(512, 0, 1);
-    for (int i = 0; i < n_tokens; i++) {
-        llama_batch_add(batch, tokens[i], i, {0}, i == n_tokens - 1);
+    const int batch_size = 512;
+    llama_batch batch = llama_batch_init(batch_size, 0, 1);
+    for (int i = 0; i < n_tokens; i += batch_size) {
+        int n_eval = std::min(batch_size, n_tokens - i);
+        batch.n_tokens = n_eval;
+        for (int k = 0; k < n_eval; k++) {
+            set_batch_token(batch, k, tokens[i + k], i + k, (int)(k == (n_eval - 1))); // Cast bool to int
+        }
+        if (llama_decode(state->ctx, batch) != 0) {
+            llama_batch_free(batch);
+            return nullptr;
+        }
     }
-
-    if (llama_decode(state->ctx, batch) != 0) {
-        llama_batch_free(batch);
-        return nullptr;
-    }
+    llama_batch_free(batch);
 
     llama_sampler* sampler = llama_sampler_chain_init(llama_sampler_chain_default_params());
     llama_sampler_chain_add(sampler, llama_sampler_init_top_k(topK));
@@ -181,6 +200,7 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerate(
 
     std::string result;
     int n_cur = n_tokens;
+    llama_batch batch_gen = llama_batch_init(1, 0, 1);
     for (int i = 0; i < maxTokens; i++) {
         llama_token token = llama_sampler_sample(sampler, state->ctx, -1);
         if (llama_vocab_is_eog(vocab, token)) break;
@@ -189,12 +209,12 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerate(
         int n = llama_token_to_piece(vocab, token, buf, sizeof(buf), 0, true);
         if (n > 0) result.append(buf, n);
 
-        llama_batch_clear(batch);
-        llama_batch_add(batch, token, n_cur++, {0}, true);
-        if (llama_decode(state->ctx, batch) != 0) break;
+        batch_gen.n_tokens = 1;
+        set_batch_token(batch_gen, 0, token, n_cur++, true);
+        if (llama_decode(state->ctx, batch_gen) != 0) break;
     }
 
-    llama_batch_free(batch);
+    llama_batch_free(batch_gen);
     llama_sampler_free(sampler);
     return env->NewStringUTF(result.c_str());
 }
@@ -204,7 +224,7 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerateStream(
     JNIEnv* env, jobject thiz, jlong handle, jstring prompt,
     jint maxTokens, jfloat temp, jfloat topP, jint topK, jfloat repeatPenalty, jobject callback
 ) {
-    LlamaContext* state = g_model_registry.getModel(handle);
+    LlamaContextState* state = g_model_registry.getModel(handle);
     if (!state) return JNI_FALSE;
 
     std::string prompt_str = jstring_to_str(env, prompt);
@@ -212,9 +232,13 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerateStream(
 
     std::thread([handle, prompt_str, maxTokens, temp, topP, topK, cb_ref]() {
         JNIEnv* env = getJNIEnv();
-        LlamaContext* state = g_model_registry.getModel(handle);
+        if (!env) {
+            return;
+        }
+        LlamaContextState* state = g_model_registry.getModel(handle);
         if (!state) {
             env->DeleteGlobalRef(cb_ref);
+            g_vm->DetachCurrentThread();
             return;
         }
 
@@ -222,22 +246,40 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerateStream(
         jmethodID onToken = env->GetMethodID(cb_class, "onToken", "(Ljava/lang/String;)V");
         jmethodID onComplete = env->GetMethodID(cb_class, "onCompleted", "()V");
         jmethodID onError = env->GetMethodID(cb_class, "onError", "(Ljava/lang/String;)V");
+        env->DeleteLocalRef(cb_class);
 
         std::lock_guard<std::mutex> lock(state->mutex);
         state->cancel_requested = false;
+        llama_batch batch = {};
+        const int batch_size = 512;
+        bool batch_initialized = false;
 
         const llama_vocab* vocab = llama_model_get_vocab(state->model);
         std::vector<llama_token> tokens(prompt_str.size() + 32);
-        int n_tokens = llama_tokenize(vocab, prompt_str.c_str(), prompt_str.size(), tokens.data(), tokens.size(), true, true);
-        
-        llama_batch batch = llama_batch_init(512, 0, 1);
-        for (int i = 0; i < n_tokens; i++) {
-            llama_batch_add(batch, tokens[i], i, {0}, i == n_tokens - 1);
-        }
-
-        if (llama_decode(state->ctx, batch) != 0) {
-            env->CallVoidMethod(cb_ref, onError, env->NewStringUTF("Prompt decode failed"));
+        int n_tokens = (int)llama_tokenize(vocab, prompt_str.c_str(), prompt_str.size(), tokens.data(), tokens.size(), true, true); // Cast result to int
+        if (n_tokens < 0) {
+            jstring msg = env->NewStringUTF("Tokenization failed");
+            env->CallVoidMethod(cb_ref, onError, msg);
+            env->DeleteLocalRef(msg);
             goto cleanup;
+        }
+        tokens.resize(n_tokens);
+
+        batch = llama_batch_init(batch_size, 0, 1);
+        batch_initialized = true;
+        for (int i = 0; i < n_tokens; i += batch_size) {
+            int n_eval = std::min(batch_size, n_tokens - i);
+            batch.n_tokens = n_eval;
+            for (int k = 0; k < n_eval; k++) {
+                set_batch_token(batch, k, tokens[i + k], i + k, (int)(k == (n_eval - 1))); // Cast bool to int
+            }
+
+            if (llama_decode(state->ctx, batch) != 0) {
+                jstring msg = env->NewStringUTF("Prompt decode failed");
+                env->CallVoidMethod(cb_ref, onError, msg);
+                env->DeleteLocalRef(msg);
+                goto cleanup;
+            }
         }
 
         {
@@ -248,11 +290,12 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerateStream(
             llama_sampler_chain_add(sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
 
             int n_cur = n_tokens;
+            llama_batch batch_gen = llama_batch_init(1, 0, 1);
             for (int i = 0; i < maxTokens; i++) {
                 if (state->cancel_requested) break;
 
                 llama_token token = llama_sampler_sample(sampler, state->ctx, -1);
-                if (llama_vocab_is_eog(vocab, token)) break;
+                if ((int)llama_vocab_is_eog(vocab, token)) break; // Cast bool to int for comparison
 
                 char buf[128];
                 int n = llama_token_to_piece(vocab, token, buf, sizeof(buf), 0, true);
@@ -262,17 +305,20 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerateStream(
                     env->DeleteLocalRef(tstr);
                 }
 
-                llama_batch_clear(batch);
-                llama_batch_add(batch, token, n_cur++, {0}, true);
-                if (llama_decode(state->ctx, batch) != 0) break;
+                batch_gen.n_tokens = 1;
+                set_batch_token(batch_gen, 0, token, n_cur++, true);
+                if (llama_decode(state->ctx, batch_gen) != 0) break;
             }
+            llama_batch_free(batch_gen);
             llama_sampler_free(sampler);
         }
 
         if (!state->cancel_requested) env->CallVoidMethod(cb_ref, onComplete);
 
     cleanup:
-        llama_batch_free(batch);
+        if (batch_initialized) {
+            llama_batch_free(batch);
+        }
         env->DeleteGlobalRef(cb_ref);
         g_vm->DetachCurrentThread();
     }).detach();
@@ -282,14 +328,14 @@ Java_com_shadowai_inference_NativeBridge_nativeGenerateStream(
 
 extern "C" JNIEXPORT jboolean JNICALL
 Java_com_shadowai_inference_NativeBridge_nativeCancel(JNIEnv* env, jobject thiz, jlong handle) {
-    LlamaContext* state = g_model_registry.getModel(handle);
+    LlamaContextState* state = g_model_registry.getModel(handle);
     if (state) state->cancel_requested = true;
     return JNI_TRUE;
 }
 
 extern "C" JNIEXPORT jobject JNICALL
 Java_com_shadowai_inference_NativeBridge_nativeGetModelInfo(JNIEnv* env, jobject thiz, jlong handle) {
-    LlamaContext* state = g_model_registry.getModel(handle);
+    LlamaContextState* state = g_model_registry.getModel(handle);
     if (!state) return nullptr;
 
     jclass cls = env->FindClass("com/shadowai/inference/NativeBridge$ModelInfo");
@@ -297,7 +343,7 @@ Java_com_shadowai_inference_NativeBridge_nativeGetModelInfo(JNIEnv* env, jobject
 
     return env->NewObject(cls, constr,
         llama_vocab_n_tokens(llama_model_get_vocab(state->model)),
-        llama_n_ctx(state->ctx),
+        (jint)llama_n_ctx(state->ctx),
         llama_model_n_embd(state->model),
         llama_model_n_layer(state->model),
         0, 0, // heads placeholder

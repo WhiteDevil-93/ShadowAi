@@ -45,7 +45,8 @@ sealed class NovitaException(
         cause
     )
 
-    class UnknownError(code: Int, details: String?) : NovitaException(
-        "Unknown error (HTTP $code): ${details ?: "No details"}"
+    class UnknownError(code: Int, details: String?, cause: Throwable? = null) : NovitaException(
+        "Unknown error (HTTP $code): ${details ?: "No details"}",
+        cause
     )
 }

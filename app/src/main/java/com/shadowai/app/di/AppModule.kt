@@ -3,12 +3,14 @@ package com.shadowai.app.di
 import android.content.Context
 import com.google.gson.Gson
 import com.shadowai.app.ai.*
+import com.shadowai.app.auth.UserPreferences
 import com.shadowai.app.network.CertificatePinningInterceptor
 import com.shadowai.app.db.FailureDao
 import com.shadowai.app.db.FeedbackDao
 import com.shadowai.app.db.LedgerDao
 import com.shadowai.app.db.MemoryDao
 import com.shadowai.app.db.MessageDao
+import com.shadowai.app.db.ModelPathDao
 import com.shadowai.app.db.ShadowDatabase
 import com.shadowai.app.db.TaskDao
 import com.shadowai.app.security.AccessControlManager
@@ -40,18 +42,24 @@ object AppModule {
     @Singleton
     fun provideLlamaNative(): LlamaNative = LlamaNative()
 
+    /**
+     * CIRCULAR DEPENDENCY FIX: ILlamaEngine interface binding
+     */
+    @Provides
+    @Singleton
+    fun provideILlamaEngine(llamaNative: LlamaNative): ILlamaEngine = llamaNative
+
     @Provides
     @Singleton
     fun provideLocalInferenceManager(
         @ApplicationContext context: Context,
-        piiMaskingProcessor: PiiMaskingProcessor
-    ): LocalInferenceManager = LocalInferenceManager(context, piiMaskingProcessor)
+        piiMaskingProcessor: PiiMaskingProcessor,
+        llamaEngine: ILlamaEngine,
+        userPreferences: UserPreferences
+    ): LocalInferenceManager = LocalInferenceManager(context, piiMaskingProcessor, llamaEngine, userPreferences)
 
     /**
      * Provides runtime-switchable LocalInferenceEngine.
-     *
-     * Default selection comes from BuildConfig, while runtime preference updates
-     * are handled by SwitchableLocalInferenceEngine via UserPreferences.
      */
     @Provides
     @Singleton
@@ -65,19 +73,11 @@ object AppModule {
         @ApplicationContext context: Context
     ): ModelDownloader = ModelDownloader.getInstance(context)
 
-    // ModelMigrationManager: resolved automatically by Hilt via @Singleton @Inject constructor
-
-    // LocalBrainManager is now @Inject constructor() and will be provided automatically
-    // fun provideLocalBrainManager(...) is removed
-
-    // FunctionExecutor: resolved automatically by Hilt via @Singleton @Inject constructor
-
     @Provides
     @Singleton
     fun provideOkHttpClient(
         certificateErrorHandler: CertificateErrorHandler
     ): OkHttpClient {
-        // Create interceptor that will handle certificate pinning failures
         val pinningInterceptor = CertificatePinningInterceptor(
             onError = { exception ->
                 certificateErrorHandler.handleCertificatePinningError(exception)
@@ -92,10 +92,6 @@ object AppModule {
             .addInterceptor(pinningInterceptor)
             .build()
     }
-
-    // ProviderRepository is now resolved automatically by Hilt via @Inject constructor.
-    // Its dependencies (ProviderCrudRepository, ProviderModelRepository, etc.) are also
-    // @Singleton @Inject classes that Hilt resolves automatically.
 
     @Provides
     @Singleton
@@ -151,7 +147,10 @@ object AppModule {
         database: ShadowDatabase
     ): FeedbackDao = database.feedbackDao()
 
-    // TemplateVerifier: resolved automatically by Hilt via @Singleton @Inject constructor
+    @Provides
+    fun provideModelPathDao(
+        database: ShadowDatabase
+    ): ModelPathDao = database.modelPathDao()
 
     @Provides
     @Singleton
@@ -169,9 +168,10 @@ object AppModule {
     @Singleton
     fun providePipelineExecutor(): PipelineExecutor = PipelineExecutor()
 
-    // PromptInjectionDefense: resolved automatically by Hilt via @Singleton @Inject constructor
-    // ProviderSecretRepository: resolved automatically by Hilt via @Singleton @Inject constructor
-    // NovitaImageGenerator: resolved automatically by Hilt via @Singleton @Inject constructor
-    // PixaiImageGenerator: resolved automatically by Hilt via @Singleton @Inject constructor
-    // DeviceActionExecutor: resolved automatically by Hilt via @Singleton @Inject constructor
+    @Provides
+    @Singleton
+    fun provideConversationSummarizer(
+        llamaNative: LlamaNative,
+        tokenCounter: TokenCounter
+    ): ConversationSummarizer = ConversationSummarizer(llamaNative, tokenCounter)
 }

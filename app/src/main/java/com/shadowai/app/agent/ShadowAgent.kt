@@ -1,6 +1,7 @@
 package com.shadowai.app.agent
 
 import android.content.Context
+import android.util.Log
 import com.shadowai.app.admin.implementation.AdminRepository
 import com.shadowai.app.execution.DeviceAction
 import com.shadowai.app.execution.DeviceActionExecutor
@@ -81,7 +82,7 @@ class ShadowAgent @Inject constructor(
         return if (source == ExecutionSource.CLOUD.name) {
             val masked = piiMaskingProcessor.maskPii(output)
             if (piiMaskingProcessor.containsPii(output)) {
-                android.util.Log.i(TAG, "PII masked in response from $source")
+                Log.i(TAG, "PII masked in response from $source")
             }
             masked
         } else {
@@ -92,7 +93,7 @@ class ShadowAgent @Inject constructor(
     suspend fun processInput(input: String): AgentResult {
         // Phase 5.4: Detect task type FROM ORIGINAL INPUT before prompt injection filter
         val originalTaskType = determineTaskType(input)
-        
+
         val scanResult = promptInjectionDefense.scan(input)
         if (!scanResult.isSafe) {
             return AgentResult.Failure(
@@ -105,7 +106,7 @@ class ShadowAgent @Inject constructor(
         val taskType = originalTaskType
 
         if (isComplexTaskType(taskType, input)) {
-            android.util.Log.d(TAG, "Delegating complex task to SupervisorAgent: $taskType")
+            Log.d(TAG, "Delegating complex task to SupervisorAgent: $taskType")
             return when (val result = supervisorAgent.get().processInput(
                 input = currentPrompt,
                 forcedTaskType = taskType
@@ -130,7 +131,7 @@ class ShadowAgent @Inject constructor(
 
         val sanitizedPrompt = piiMaskingProcessor.maskPii(currentPrompt)
         if (sanitizedPrompt != currentPrompt) {
-            android.util.Log.i(TAG, "PII masked before sending to providers")
+            Log.i(TAG, "PII masked before sending to providers")
         }
         val taskId = TaskIdentifier(UUID.randomUUID().toString())
         val task = Task(
@@ -150,8 +151,24 @@ class ShadowAgent @Inject constructor(
             return AgentResult.Failure(AgentError(ErrorCategory.TRANSPORT, e.message ?: "Network error"))
         } catch (e: ResourceException) {
             return AgentResult.Failure(AgentError(ErrorCategory.EXHAUSTION, e.message ?: "Resource exhausted"))
+        } catch (e: IllegalStateException) {
+            return AgentResult.Failure(AgentError(ErrorCategory.EXECUTION, "Invalid state: ${e.message}"))
+        } catch (e: IllegalArgumentException) {
+            return AgentResult.Failure(AgentError(ErrorCategory.SEMANTIC, "Invalid argument: ${e.message}"))
+        } catch (e: java.util.concurrent.TimeoutException) {
+            return AgentResult.Failure(AgentError(ErrorCategory.EXHAUSTION, "Request timeout: ${e.message}"))
+        } catch (e: kotlin.coroutines.cancellation.CancellationException) {
+            // Never swallow CancellationException — re-throw to preserve structured concurrency
+            throw e
         } catch (e: Exception) {
-            val cat = if (e.message?.contains("budget") == true) ErrorCategory.EXHAUSTION else ErrorCategory.UNKNOWN
+            // L-2: Catch-all for truly unexpected errors - log and categorize
+            Log.e(TAG, "Unexpected execution error", e)
+            val cat = when {
+                e.message?.contains("budget", ignoreCase = true) == true -> ErrorCategory.EXHAUSTION
+                e.message?.contains("timeout", ignoreCase = true) == true -> ErrorCategory.EXHAUSTION
+                e.message?.contains("permission", ignoreCase = true) == true -> ErrorCategory.VIOLATION
+                else -> ErrorCategory.UNKNOWN
+            }
             return AgentResult.Failure(AgentError(cat, e.message ?: "Execution Error"))
         }
 
@@ -159,7 +176,7 @@ class ShadowAgent @Inject constructor(
             val rawOutput = result.task.currentState.output
             val modelId = result.modelId?.id
             val source = result.routingDecision.selectedSource.name
-            
+
             val output = sanitizeOutput(rawOutput, source)
 
             if (taskType == TaskType.DEVICE_CONTROL ||
@@ -169,8 +186,11 @@ class ShadowAgent @Inject constructor(
                 taskType == TaskType.SYSTEM_INTERACTION) {
                 val planResult = try {
                     planParser.parse(output)
-                } catch (e: Exception) {
-                    val errorMsg = "Failed to parse plan from model output: ${e.localizedMessage}"
+                } catch (e: org.json.JSONException) {
+                    val errorMsg = "Failed to parse plan JSON from model output: ${e.localizedMessage}"
+                    return AgentResult.Failure(AgentError(ErrorCategory.SEMANTIC, errorMsg))
+                } catch (e: IllegalArgumentException) {
+                    val errorMsg = "Invalid plan structure: ${e.localizedMessage}"
                     return AgentResult.Failure(AgentError(ErrorCategory.SEMANTIC, errorMsg))
                 }
 
@@ -212,21 +232,21 @@ class ShadowAgent @Inject constructor(
                         deviceActionExecutor.execute(action)
                     }
                     is VerificationEngine.VerificationResult.PreconditionMissing -> {
-                        android.util.Log.w(TAG, "Precondition missing: ${consistencyResult.message}")
+                        Log.w(TAG, "Precondition missing: ${consistencyResult.message}")
                         Result.failure(ActionBlockedException(consistencyResult.message))
                     }
                     is VerificationEngine.VerificationResult.PolicyViolation -> {
-                        android.util.Log.w(TAG, "Policy violation: ${consistencyResult.message}")
+                        Log.w(TAG, "Policy violation: ${consistencyResult.message}")
                         Result.failure(ActionBlockedException(consistencyResult.message))
                     }
                 }
             }
             is VerificationEngine.VerificationResult.PreconditionMissing -> {
-                android.util.Log.w(TAG, "Precondition missing: ${verificationResult.message}")
+                Log.w(TAG, "Precondition missing: ${verificationResult.message}")
                 Result.failure(ActionBlockedException(verificationResult.message))
             }
             is VerificationEngine.VerificationResult.PolicyViolation -> {
-                android.util.Log.w(TAG, "Policy violation: ${verificationResult.message}")
+                Log.w(TAG, "Policy violation: ${verificationResult.message}")
                 Result.failure(ActionBlockedException(verificationResult.message))
             }
         }

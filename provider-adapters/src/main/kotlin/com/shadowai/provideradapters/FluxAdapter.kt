@@ -660,9 +660,11 @@ class FluxAdapter(
         class UnknownError(
             code: Int,
             message: String?,
-            apiErrorCode: String? = null
+            apiErrorCode: String? = null,
+            cause: Throwable? = null
         ) : FluxException(
             message = "Unknown error (HTTP $code): ${message ?: "No details"}",
+            cause = cause,
             errorCode = apiErrorCode
         )
     }

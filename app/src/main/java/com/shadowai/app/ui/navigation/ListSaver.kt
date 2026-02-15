@@ -55,7 +55,12 @@ private class NavigationRouteWrapper(
     val usageCredits: UsageCredits? = null,
     val appearance: Appearance? = null,
     val diagnostics: Diagnostics? = null,
-    val hotSwap: HotSwap? = null
+    val hotSwap: HotSwap? = null,
+    val securitySettings: SecuritySettings? = null,
+    val voiceSettings: VoiceSettings? = null,
+    val chatHistory: ChatHistory? = null,
+    val modelPicker: ModelPicker? = null,
+    val voiceSettingsRoute: VoiceSettingsRoute? = null
 ) {
     fun toRoute(): NavigationRoute = when (type) {
         "Chat" -> chat!!
@@ -68,9 +73,14 @@ private class NavigationRouteWrapper(
         "Appearance" -> appearance!!
         "Diagnostics" -> diagnostics!!
         "HotSwap" -> hotSwap!!
+        "SecuritySettings" -> securitySettings!!
+        "VoiceSettings" -> voiceSettings!!
+        "ChatHistory" -> chatHistory!!
+        "ModelPicker" -> modelPicker!!
+        "VoiceSettingsRoute" -> voiceSettingsRoute!!
         else -> throw SerializationException("Unknown type: $type")
     }
-    
+
     companion object {
         fun fromRoute(route: NavigationRoute): NavigationRouteWrapper = when (route) {
             is Chat -> NavigationRouteWrapper(type = "Chat", chat = route)
@@ -83,6 +93,11 @@ private class NavigationRouteWrapper(
             is Appearance -> NavigationRouteWrapper(type = "Appearance", appearance = route)
             is Diagnostics -> NavigationRouteWrapper(type = "Diagnostics", diagnostics = route)
             is HotSwap -> NavigationRouteWrapper(type = "HotSwap", hotSwap = route)
+            is SecuritySettings -> NavigationRouteWrapper(type = "SecuritySettings", securitySettings = route)
+            is VoiceSettings -> NavigationRouteWrapper(type = "VoiceSettings", voiceSettings = route)
+            is ChatHistory -> NavigationRouteWrapper(type = "ChatHistory", chatHistory = route)
+            is ModelPicker -> NavigationRouteWrapper(type = "ModelPicker", modelPicker = route)
+            is VoiceSettingsRoute -> NavigationRouteWrapper(type = "VoiceSettingsRoute", voiceSettingsRoute = route)
         }
     }
 }

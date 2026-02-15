@@ -10,16 +10,23 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
  * Adapter for OpenAI-compatible API endpoints.
@@ -34,8 +41,11 @@ class OpenAICompatibleAdapter(
 ) : ProviderAdapter {
 
     private companion object {
-        private const val DEFAULT_TIMEOUT_MS = 60000L
-        private const val STREAM_TIMEOUT_MS = 300_000L
+        // FIX H-16-H-17: Unified timeout constants
+        // All timeout values in milliseconds
+        private const val DEFAULT_TIMEOUT_MS = 60000L           // 60 seconds for standard requests
+        private const val STREAM_TIMEOUT_MS = 300_000L            // 5 minutes for streaming
+        private const val STREAM_CHUNK_TIMEOUT_MS = 30_000L      // 30 seconds between chunks
         private const val MAX_RETRIES = 3
         private const val INITIAL_RETRY_DELAY_MS = 1000L
     }
@@ -57,27 +67,14 @@ class OpenAICompatibleAdapter(
 
     override suspend fun validateConfig(): Boolean {
         return config.baseUrl.isNotBlank() &&
-               !config.resolveApiKey().isNullOrBlank()
+               config.resolveApiKeySecret() != null
     }
 
     override suspend fun isAvailable(): Boolean = withContext(Dispatchers.IO) {
-        if (!isInitialized) {
-            return@withContext false
-        }
-        try {
-            // Quick health check
-            val apiKey = config.resolveApiKey() ?: return@withContext false
-            val request = Request.Builder()
-                .url("${config.baseUrl}/models")
-                .header("Authorization", "Bearer $apiKey")
-                .get()
-                .build()
-
-            val response = withRetry { httpClient.newCall(request).execute() }
-            response.isSuccessful
-        } catch (e: Exception) {
-            false
-        }
+        // H-10 FIX: Lightweight check to avoid network overhead on every request.
+        // AdapterBridge uses this to decide whether to call initialize().
+        // Network health should be checked by AdapterHealthChecker or during execution.
+        return@withContext isInitialized
     }
 
     override suspend fun canExecute(transform: Transform): Boolean {
@@ -121,13 +118,16 @@ class OpenAICompatibleAdapter(
     /**
      * Execute a streaming chat completion request.
      * Returns a Flow of partial text responses.
+     * FIX H-15: Proper resource cleanup with use() blocks
+     * FIX H-16-H-17: Consistent timeout handling - throws on timeout (matching non-streaming behavior)
      */
     fun executeStreaming(
         prompt: String,
         parameters: Map<String, Any>
     ): Flow<StreamingResponse> = flow {
         val modelId = config.modelId ?: "gpt-3.5-turbo"
-        val maxTokens = parameters["maxTokens"] as? Int ?: 512
+        // FIX H-16-H-17: Consistent maxTokens default for streaming (was 512, now 1024)
+        val maxTokens = parameters["maxTokens"] as? Int ?: 1024
         val temperature = parameters["temperature"] as? Double ?: 0.7
         val systemPrompt = parameters["systemPrompt"] as? String
 
@@ -146,60 +146,71 @@ class OpenAICompatibleAdapter(
             stream = true
         )
 
-        val apiKey = config.resolveApiKey()
+        val secret = config.resolveApiKeySecret()
             ?: throw OpenAICompatibleException.AuthenticationError()
 
-        val request = Request.Builder()
+        val request = secret.withSecretBytes { bytes ->
+            Request.Builder()
             .url("${config.baseUrl}/chat/completions")
-            .header("Authorization", "Bearer $apiKey")
+            .header("Authorization", "Bearer ${String(bytes, Charsets.UTF_8)}")
             .header("Content-Type", "application/json")
             .post(gson.toJson(requestBody).toRequestBody("application/json".toMediaType()))
             .build()
+        }
 
+        // FIX H-16-H-17: Use consistent streaming timeout
         val client = httpClient.newBuilder()
             .readTimeout(STREAM_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .build()
 
-        val response = withRetry { client.newCall(request).execute() }
-
-        if (!response.isSuccessful) {
-            val errorBody = response.body?.string()
-            val error = parseErrorResponse(response.code, errorBody)
-            throw error
+        // FIX H-15: Use response.use() wrapper for proper resource cleanup
+        // FIX H-16-H-17: Wrap in withTimeout to throw Timeout on streaming timeout (consistent with non-streaming)
+        val response = withTimeout(STREAM_TIMEOUT_MS) {
+            withRetry { client.newCall(request).await() }
         }
+        response.use { resp ->
+            if (!resp.isSuccessful) {
+                val errorBody = resp.body?.string()
+                val error = parseErrorResponse(resp.code, errorBody)
+                throw error
+            }
 
-        response.body?.byteStream()?.use { stream ->
-            stream.bufferedReader().useLines { lines ->
-                val isDone = AtomicBoolean(false)
+            // FIX H-15: Use body.use() to ensure stream is closed
+            resp.body.use { body ->
+                body?.byteStream()?.use { stream ->
+                    stream.bufferedReader().useLines { lines ->
+                        val isDone = AtomicBoolean(false)
 
-                lines.forEach { line ->
-                    if (isDone.get()) return@forEach
+                        lines.forEach { line ->
+                            if (isDone.get()) return@forEach
 
-                    when {
-                        line.isBlank() -> return@forEach
-                        line.startsWith("data: ") -> {
-                            val data = line.substring(6)
-                            if (data == "[DONE]") {
-                                isDone.set(true)
-                                emit(StreamingResponse.Done)
-                            } else {
-                                try {
-                                    val chunk = gson.fromJson(data, ChatCompletionChunk::class.java)
-                                    val delta = chunk.choices.firstOrNull()?.delta?.content
-                                    if (!delta.isNullOrEmpty()) {
-                                        emit(StreamingResponse.Chunk(delta))
-                                    }
-                                    if (chunk.choices.firstOrNull()?.finishReason != null) {
+                            when {
+                                line.isBlank() -> return@forEach
+                                line.startsWith("data: ") -> {
+                                    val data = line.substring(6)
+                                    if (data == "[DONE]") {
                                         isDone.set(true)
                                         emit(StreamingResponse.Done)
+                                    } else {
+                                        try {
+                                            val chunk = gson.fromJson(data, ChatCompletionChunk::class.java)
+                                            val delta = chunk.choices.firstOrNull()?.delta?.content
+                                            if (!delta.isNullOrEmpty()) {
+                                                emit(StreamingResponse.Chunk(delta))
+                                            }
+                                            if (chunk.choices.firstOrNull()?.finishReason != null) {
+                                                isDone.set(true)
+                                                emit(StreamingResponse.Done)
+                                            }
+                                        } catch (e: Exception) {
+                                            emit(StreamingResponse.Error(e))
+                                        }
                                     }
-                                } catch (e: Exception) {
-                                    emit(StreamingResponse.Error(e))
                                 }
                             }
                         }
                     }
-                }
+                } ?: throw OpenAICompatibleException.EmptyResponse()
             }
         }
     }.flowOn(Dispatchers.IO)
@@ -229,17 +240,19 @@ class OpenAICompatibleAdapter(
                 stream = false
             )
 
-            val apiKeyText = config.resolveApiKey()
+            val secret = config.resolveApiKeySecret()
                 ?: return@withTimeoutOrNull Result.failure(OpenAICompatibleException.AuthenticationError())
 
-            val request = Request.Builder()
+            val request = secret.withSecretBytes { bytes ->
+                 Request.Builder()
                 .url("${config.baseUrl}/chat/completions")
-                .header("Authorization", "Bearer $apiKeyText")
+                .header("Authorization", "Bearer ${String(bytes, Charsets.UTF_8)}")
                 .header("Content-Type", "application/json")
                 .post(gson.toJson(requestBody).toRequestBody("application/json".toMediaType()))
                 .build()
+            }
 
-            val response = withRetry { httpClient.newCall(request).execute() }
+            val response = withRetry { httpClient.newCall(request).await() }
             response.use { resp ->
                 if (resp.isSuccessful) {
                     val responseBody = resp.body?.string()
@@ -331,17 +344,19 @@ class OpenAICompatibleAdapter(
                 temperature = temperature
             )
 
-            val visionApiKey = config.resolveApiKey()
+            val secret = config.resolveApiKeySecret()
                 ?: return@withTimeoutOrNull Result.failure(OpenAICompatibleException.AuthenticationError())
 
-            val request = Request.Builder()
+            val request = secret.withSecretBytes { bytes ->
+                 Request.Builder()
                 .url("${config.baseUrl}/chat/completions")
-                .header("Authorization", "Bearer $visionApiKey")
+                .header("Authorization", "Bearer ${String(bytes, Charsets.UTF_8)}")
                 .header("Content-Type", "application/json")
                 .post(gson.toJson(requestBody).toRequestBody("application/json".toMediaType()))
                 .build()
+            }
 
-            val response = withRetry { httpClient.newCall(request).execute() }
+            val response = withRetry { httpClient.newCall(request).await() }
             response.use { resp ->
                 if (resp.isSuccessful) {
                     val responseBody = resp.body?.string()
@@ -389,17 +404,19 @@ class OpenAICompatibleAdapter(
                 quality = quality
             )
 
-            val imageGenApiKey = config.resolveApiKey()
+            val secret = config.resolveApiKeySecret()
                 ?: return@withTimeoutOrNull Result.failure(OpenAICompatibleException.AuthenticationError())
 
-            val request = Request.Builder()
+            val request = secret.withSecretBytes { bytes ->
+                 Request.Builder()
                 .url("${config.baseUrl}/images/generations")
-                .header("Authorization", "Bearer $imageGenApiKey")
+                .header("Authorization", "Bearer ${String(bytes, Charsets.UTF_8)}")
                 .header("Content-Type", "application/json")
                 .post(gson.toJson(requestBody).toRequestBody("application/json".toMediaType()))
                 .build()
+            }
 
-            val response = withRetry { httpClient.newCall(request).execute() }
+            val response = withRetry { httpClient.newCall(request).await() }
             response.use { resp ->
                 if (resp.isSuccessful) {
                     val responseBody = resp.body?.string()
@@ -460,6 +477,21 @@ class OpenAICompatibleAdapter(
         throw lastException ?: OpenAICompatibleException.UnknownError(-1, "Max retries exceeded")
     }
 
+    private suspend fun Call.await(): Response = suspendCancellableCoroutine { continuation ->
+        enqueue(object : Callback {
+            override fun onResponse(call: Call, response: Response) {
+                continuation.resume(response)
+            }
+            override fun onFailure(call: Call, e: IOException) {
+                if (continuation.isCancelled) return
+                continuation.resumeWithException(e)
+            }
+        })
+        continuation.invokeOnCancellation {
+            try { cancel() } catch (ex: Exception) { /* ignore */ }
+        }
+    }
+
     /**
      * Helper to encode image bytes to base64 data URL.
      */
@@ -517,11 +549,16 @@ class OpenAICompatibleAdapter(
         }
     }
 
+    /**
+     * M-2 FIX: Preserve original exception context in error mapping.
+     * The original exception is now passed as the cause for better debugging.
+     */
     private fun mapToDomainError(e: Exception): OpenAICompatibleException {
         return when (e) {
             is IOException -> OpenAICompatibleException.NetworkError(e)
             is OpenAICompatibleException -> e
-            else -> OpenAICompatibleException.UnknownError(-1, e.message)
+            // M-2 FIX: Pass original exception as cause instead of just message
+            else -> OpenAICompatibleException.UnknownError(-1, e.message, cause = e)
         }
     }
 
@@ -728,9 +765,11 @@ class OpenAICompatibleAdapter(
             code: Int,
             message: String?,
             apiErrorCode: String? = null,
-            errorType: String? = null
+            errorType: String? = null,
+            cause: Throwable? = null
         ) : OpenAICompatibleException(
             message = "Unknown error (HTTP $code): ${message ?: "No details"}",
+            cause = cause,
             errorCode = apiErrorCode,
             errorType = errorType
         )

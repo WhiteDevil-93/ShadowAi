@@ -27,8 +27,9 @@ The authoritative guides are now at the repo root (`AGENTS.md`, `WORKTREE.md`, `
 
 ### Module Dependency Graph
 
-```
+```text
 app/ (Android Application)
+
 ├── core-contracts/ (Foundation interfaces - ALL modules depend on this)
 ├── model-catalog/ (Model discovery & deduplication)
 ├── provider-adapters/ (Provider implementations)
@@ -66,6 +67,7 @@ Per [`plans/todo.md`](plans/todo.md), the current focus is:
 - [ ] Phase 5-9: UI Composition, Diagnostics, Hot-Swapping, Module Boundaries
 
 **Integration Targets for Phase 2**:
+
 - Existing `LiquidProvider` → Migrate to `LocalLlamaAdapter`
 - Existing `NovitaService` → Migrate to `NovitaAdapter`
 - Existing `PixAiService` → Migrate to `PixAiAdapter`
@@ -78,14 +80,14 @@ Per [`plans/todo.md`](plans/todo.md), the current focus is:
 ### Application Entry Points
 
 | File | Purpose |
-|------|---------|
+| :--- | :--- |
 | [`app/src/main/java/com/shadowai/app/ComposeMainActivity.kt`](app/src/main/java/com/shadowai/app/ComposeMainActivity.kt) | Main Compose-based activity, DI entry point |
 | [`app/src/main/java/com/shadowai/app/AndroidManifest.xml`](app/src/main/java/com/shadowai/app/AndroidManifest.xml) | App configuration, permissions, service declarations |
 
 ### AI & Provider System
 
 | File | Purpose |
-|------|---------|
+| :--- | :--- |
 | [`app/src/main/java/com/shadowai/app/providers/ProviderRepository.kt`](app/src/main/java/com/shadowai/app/providers/ProviderRepository.kt) | Manages AI provider configurations, API keys, model listing |
 | [`app/src/main/java/com/shadowai/app/providers/ProviderPlugin.kt`](app/src/main/java/com/shadowai/app/providers/ProviderPlugin.kt) | Plugin interface for custom AI providers |
 | [`app/src/main/java/com/shadowai/app/providers/ProviderPluginRegistry.kt`](app/src/main/java/com/shadowai/app/providers/ProviderPluginRegistry.kt) | Manages plugin lifecycle, priority-based selection |
@@ -93,7 +95,7 @@ Per [`plans/todo.md`](plans/todo.md), the current focus is:
 ### Task Execution & Routing
 
 | File | Purpose |
-|------|---------|
+| :--- | :--- |
 | [`app/src/main/java/com/shadowai/app/execution/TaskExecutor.kt`](app/src/main/java/com/shadowai/app/execution/TaskExecutor.kt) | Orchestrates task execution with routing policies, retry logic |
 | [`app/src/main/java/com/shadowai/app/execution/CircuitBreaker.kt`](app/src/main/java/com/shadowai/app/execution/CircuitBreaker.kt) | Fault tolerance pattern (CLOSED, OPEN, HALF_OPEN states) |
 | [`app/src/main/java/com/shadowai/app/execution/ProviderCircuitBreakerManager.kt`](app/src/main/java/com/shadowai/app/execution/ProviderCircuitBreakerManager.kt) | Isolated circuit breakers per provider/model |
@@ -101,7 +103,7 @@ Per [`plans/todo.md`](plans/todo.md), the current focus is:
 ### Agent System
 
 | File | Purpose |
-|------|---------|
+| :--- | :--- |
 | [`app/src/main/java/com/shadowai/app/agent/ShadowAgent.kt`](app/src/main/java/com/shadowai/app/agent/ShadowAgent.kt) | Core agent implementation |
 | [`app/src/main/java/com/shadowai/app/agent/SupervisorAgent.kt`](app/src/main/java/com/shadowai/app/agent/SupervisorAgent.kt) | High-level agent orchestration |
 | [`app/src/main/java/com/shadowai/app/agent/AgenticLoop.kt`](app/src/main/java/com/shadowai/app/agent/AgenticLoop.kt) | Agent execution loop |
@@ -109,7 +111,7 @@ Per [`plans/todo.md`](plans/todo.md), the current focus is:
 ### Local Inference
 
 | File | Purpose |
-|------|---------|
+| :--- | :--- |
 | [`app/src/main/java/com/shadowai/app/ai/LocalBrainManager.kt`](app/src/main/java/com/shadowai/app/ai/LocalBrainManager.kt) | Local model configuration, Retrofit API |
 | [`app/src/main/java/com/shadowai/app/ai/LocalInferenceManager.kt`](app/src/main/java/com/shadowai/app/ai/LocalInferenceManager.kt) | Local inference orchestration |
 | [`app/src/main/java/com/shadowai/app/ai/IsolatedInferenceManager.kt`](app/src/main/java/com/shadowai/app/ai/IsolatedInferenceManager.kt) | Manages isolated inference process (`:inference_process`) |
@@ -117,7 +119,7 @@ Per [`plans/todo.md`](plans/todo.md), the current focus is:
 ### Security (Zero-Trust Model)
 
 | File | Purpose |
-|------|---------|
+| :--- | :--- |
 | [`app/src/main/java/com/shadowai/app/security/SecurityManager.kt`](app/src/main/java/com/shadowai/app/security/SecurityManager.kt) | AES-256-GCM encryption, RSA key management |
 | [`app/src/main/java/com/shadowai/app/security/TeeKeyManager.kt`](app/src/main/java/com/shadowai/app/security/TeeKeyManager.kt) | TEE/StrongBox-backed key generation |
 | [`app/src/main/java/com/shadowai/app/security/BiometricKeyManager.kt`](app/src/main/java/com/shadowai/app/security/BiometricKeyManager.kt) | Biometric-bound keys |
@@ -127,7 +129,7 @@ Per [`plans/todo.md`](plans/todo.md), the current focus is:
 ### Database & Persistence
 
 | File | Purpose |
-|------|---------|
+| :--- | :--- |
 | [`app/src/main/java/com/shadowai/app/db/ShadowDatabase.kt`](app/src/main/java/com/shadowai/app/db/ShadowDatabase.kt) | Room database (WAL enabled) |
 | [`app/src/main/java/com/shadowai/app/db/ShadowPersistence.kt`](app/src/main/java/com/shadowai/app/db/ShadowPersistence.kt) | Persistence layer |
 | [`app/src/main/java/com/shadowai/app/db/DatabasePrunerWorker.kt`](app/src/main/java/com/shadowai/app/db/DatabasePrunerWorker.kt) | Automated data expiration |
@@ -329,7 +331,7 @@ val response = breaker.execute {
 ### Test Coverage Expectations
 
 | Component | Minimum Coverage |
-|-----------|-----------------|
+| :--- | :--- |
 | Security classes | 90% |
 | CircuitBreaker | 95% |
 | Provider plugins | 80% |
@@ -337,8 +339,9 @@ val response = breaker.execute {
 
 ### Test Structure
 
-```
+```text
 app/src/test/kotlin/com/shadowai/app/
+
 ├── execution/
 │   ├── CircuitBreakerTest.kt
 │   └── TaskExecutorTest.kt
@@ -375,6 +378,7 @@ class ProviderRepository @Inject constructor(
 ### Architecture Decisions
 
 Document non-trivial changes in:
+
 - [`plans/`](plans/) directory for architectural decisions
 - PR descriptions for implementation details
 - Code comments for complex logic
@@ -392,8 +396,9 @@ Document non-trivial changes in:
 
 ### Commit Messages
 
-```
+```text
 <type>(<scope>): <subject>
+
 
 <body>
 
@@ -403,8 +408,10 @@ Document non-trivial changes in:
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 Example:
-```
+
+```text
 feat(providers): add OpenAICompatibleAdapter
+
 
 Implement adapter for OpenAI-compatible APIs including:
 - Chat completions endpoint
@@ -421,7 +428,7 @@ Closes #123
 ### Key Log Tags
 
 | Tag | Component |
-|-----|-----------|
+| :--- | :--- |
 | `ShadowAI` | Main application tag |
 | `ProviderRepo` | Provider management |
 | `TaskExecutor` | Task execution |
@@ -432,7 +439,7 @@ Closes #123
 ### Diagnostic Files
 
 | File | Purpose |
-|------|---------|
+| :--- | :--- |
 | [`diagnostics/`](diagnostics/) | Diagnostics module (Phase 7 deliverable) |
 | [`app/src/main/java/com/shadowai/app/notifications/NotificationManager.kt`](app/src/main/java/com/shadowai/app/notifications/NotificationManager.kt) | Runtime notification diagnostics |
 
@@ -443,7 +450,7 @@ Closes #123
 ### Backend Services
 
 | Service | Purpose | Config File |
-|---------|---------|-------------|
+| :--- | :--- | :--- |
 | Novita AI | Image generation | [`backend/src/main/kotlin/com/shadowai/backend/NovitaService.kt`](backend/src/main/kotlin/com/shadowai/backend/NovitaService.kt) |
 | PixAI | Image generation | [`backend/src/main/kotlin/com/shadowai/backend/PixAiService.kt`](backend/src/main/kotlin/com/shadowai/backend/PixAiService.kt) |
 
@@ -486,7 +493,7 @@ Closes #123
 ## 14. Quick Reference
 
 | Concept | Key File |
-|---------|----------|
+| :--- | :--- |
 | Provider system | [`app/src/main/java/com/shadowai/app/providers/ProviderRepository.kt`](app/src/main/java/com/shadowai/app/providers/ProviderRepository.kt) |
 | Task execution | [`app/src/main/java/com/shadowai/app/execution/TaskExecutor.kt`](app/src/main/java/com/shadowai/app/execution/TaskExecutor.kt) |
 | Circuit breaker | [`app/src/main/java/com/shadowai/app/execution/CircuitBreaker.kt`](app/src/main/java/com/shadowai/app/execution/CircuitBreaker.kt) |

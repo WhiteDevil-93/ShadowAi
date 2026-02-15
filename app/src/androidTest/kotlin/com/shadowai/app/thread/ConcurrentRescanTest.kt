@@ -13,6 +13,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -33,7 +34,7 @@ class ConcurrentRescanTest {
     @Test
     fun `concurrent rescan produces no duplicates`() = runBlocking {
         val repetitions = 10
-        val allModelSets = mutableSetOf<String>()
+        val allModelSets = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
 
         coroutineScope {
             val jobs = List(repetitions) { index ->
@@ -103,7 +104,7 @@ class ConcurrentRescanTest {
         )
 
         val concurrentScans = 5
-        val results = mutableMapOf<Int, List<String>>()
+        val results = ConcurrentHashMap<Int, List<String>>()
 
         coroutineScope {
             val jobs = (0 until concurrentScans).map { index ->
@@ -117,7 +118,8 @@ class ConcurrentRescanTest {
                 }
             }
 
-            jobSizes = jobs.awaitAll()
+            val jobSizes = jobs.awaitAll()
+            assertTrue("All scan jobs should complete", jobSizes.all { it >= 0 })
         }
 
         // Verify thread safety: results should be deterministically the same

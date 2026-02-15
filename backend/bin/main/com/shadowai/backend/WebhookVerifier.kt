@@ -53,11 +53,7 @@ object WebhookVerifier {
         }
 
         val computed = hmac(body, secret)
-        val providedSignatureBytes = try {
-            hexStringToByteArray(signature)
-        } catch (e: IllegalArgumentException) {
-            return false // Invalid signature format
-        }
+        val providedSignatureBytes = decodeSignature(signature) ?: return false
 
         // Constant-time comparison
         return MessageDigest.isEqual(computed, providedSignatureBytes)
@@ -116,6 +112,18 @@ object WebhookVerifier {
         val key = SecretKeySpec(secret.toByteArray(Charsets.UTF_8), HMAC_SHA256)
         mac.init(key)
         return mac.doFinal(data.toByteArray(Charsets.UTF_8))
+    }
+
+    private fun decodeSignature(signature: String): ByteArray? {
+        val normalized = signature.trim()
+            .removePrefix("sha256=")
+            .removePrefix("SHA256=")
+            .removePrefix("SHA-256=")
+
+        val hexDecoded = runCatching { hexStringToByteArray(normalized) }.getOrNull()
+        if (hexDecoded != null) return hexDecoded
+
+        return runCatching { java.util.Base64.getDecoder().decode(normalized) }.getOrNull()
     }
 
     private fun hexStringToByteArray(s: String): ByteArray {

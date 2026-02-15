@@ -3,6 +3,7 @@ package com.shadowai.app.lifecycle
 import android.content.Context
 import android.util.Log
 import androidx.work.WorkManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -35,7 +36,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class BackgroundTaskManager @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
 
     private companion object {

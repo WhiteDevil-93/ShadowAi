@@ -10,6 +10,7 @@ import kotlin.math.min
  * Default HTTP status codes that are considered retryable.
  */
 val DEFAULT_RETRYABLE_CODES = setOf(
+    408, // Request Timeout (M-3: Added HTTP 408 for timeout scenarios)
     429, // Too Many Requests
     500, // Internal Server Error
     502, // Bad Gateway
@@ -104,8 +105,8 @@ suspend fun <T> withRetry(
 
             // Check if this exception is retryable
             if (attempt < config.maxRetries && isRetryableException(e, config)) {
-                // Add jitter to prevent thundering herd
-                val jitter = (Math.random() * 0.1 * currentDelay).toLong()
+                // FIX H-21: Increase jitter from 10% to 30% for better thundering herd prevention
+                val jitter = (Math.random() * 0.3 * currentDelay).toLong()
                 val delayWithJitter = currentDelay + jitter
 
                 delay(delayWithJitter)

@@ -141,7 +141,7 @@ class NovelAIAdapter(
         prompt: String,
         parameters: Map<String, Any> = emptyMap()
     ): Result<String> {
-        return execute(Transform.TextToText(), prompt, parameters) as Result<String>
+        return executeTextGeneration(prompt, parameters)
     }
 
     /**
@@ -152,7 +152,7 @@ class NovelAIAdapter(
         prompt: String,
         parameters: Map<String, Any> = emptyMap()
     ): Result<NovelAIImageResult> {
-        return execute(Transform.TextToImage(), prompt, parameters) as Result<NovelAIImageResult>
+        return executeImageGeneration(prompt, parameters)
     }
 
     /**
@@ -512,11 +512,16 @@ class NovelAIAdapter(
         }
     }
 
+    /**
+     * M-2 FIX: Preserve original exception context in error mapping.
+     * The original exception is now passed as the cause for better debugging.
+     */
     private fun mapToDomainError(e: Exception): NovelAIException {
         return when (e) {
             is IOException -> NovelAIException.NetworkError(e)
             is NovelAIException -> e
-            else -> NovelAIException.UnknownError(-1, e.message)
+            // M-2 FIX: Pass original exception as cause instead of just message
+            else -> NovelAIException.UnknownError(-1, e.message, cause = e)
         }
     }
 
@@ -673,9 +678,11 @@ class NovelAIAdapter(
         class UnknownError(
             code: Int,
             message: String?,
-            apiErrorCode: String? = null
+            apiErrorCode: String? = null,
+            cause: Throwable? = null
         ) : NovelAIException(
             message = "Unknown error (HTTP $code): ${message ?: "No details"}",
+            cause = cause,
             errorCode = apiErrorCode
         )
     }

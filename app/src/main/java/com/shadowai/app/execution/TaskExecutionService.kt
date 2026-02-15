@@ -1,9 +1,8 @@
 package com.shadowai.app.execution
 
-import com.shadowai.app.ai.LocalBrainManager
 import com.shadowai.app.models.ModelId
-import com.shadowai.app.providers.ActiveProviderConfig
-import com.shadowai.app.providers.ApiStyle
+import com.shadowai.core.providers.ActiveProviderConfig
+import com.shadowai.core.providers.ApiStyle
 import com.shadowai.app.providers.ProviderFallbackManager
 import com.shadowai.app.providers.AdapterBridge
 import com.shadowai.app.routing.ExecutionSource
@@ -20,11 +19,13 @@ import javax.inject.Singleton
  * Service responsible for AI model selection and task execution coordination.
  * Refactored to use the unified Adapter architecture (Phase 2)
  * and Normalized Artifact System (Phase 3).
+ * 
+ * L-4: Removed deprecated LocalBrainManager dependency - now uses ProviderSelector
+ * through ProviderFallbackManager for all provider configuration.
  */
 @Singleton
 class TaskExecutionService @Inject constructor(
     private val providerFallbackManager: ProviderFallbackManager,
-    private val localBrainManager: LocalBrainManager,
     private val adapterBridge: AdapterBridge
 ) {
     companion object {
@@ -111,22 +112,49 @@ class TaskExecutionService @Inject constructor(
             } else {
                 throw result.exceptionOrNull() ?: Exception("Unknown execution error")
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
             if (isLocalStyle(config.apiStyle)) {
-                Log.w(TAG, "Local execution failed, attempting cloud fallback", e)
+                Log.w(TAG, "Local execution failed with IO error, attempting cloud fallback", e)
                 attemptCloudFallback(task, e.message ?: "Unknown error")
             } else {
                 throw e
             }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Execution failed - security exception", e)
+            throw e
+        } catch (e: IllegalStateException) {
+            Log.e(TAG, "Execution failed with illegal state", e)
+            throw e
         }
     }
 
     private suspend fun attemptCloudFallback(task: Task, failureReason: String): String {
-        val cloudResult = providerFallbackManager.selectProvider(task.type, preferLocal = false)
-            ?: throw IllegalStateException("Local failed ($failureReason) and no cloud fallback available")
+        val cloudCandidates = providerFallbackManager.getCloudFallbackChain(task.type)
+        if (cloudCandidates.isEmpty()) {
+            throw IllegalStateException("Local failed ($failureReason) and no cloud fallback available")
+        }
 
-        Log.i(TAG, "Falling back to cloud provider: ${cloudResult.config.providerId}")
-        return executeWithConfig(task, cloudResult.config)
+        val failureSummaries = mutableListOf<String>()
+        var lastFailure: Throwable? = null
+
+        cloudCandidates.forEachIndexed { index, config ->
+            try {
+                Log.i(
+                    TAG,
+                    "Falling back to cloud provider ${index + 1}/${cloudCandidates.size}: ${config.providerId}"
+                )
+                return executeWithConfig(task, config)
+            } catch (e: Exception) {
+                lastFailure = e
+                failureSummaries += "${config.providerId}: ${e.message ?: e::class.java.simpleName}"
+                Log.w(TAG, "Cloud fallback failed for ${config.providerId}", e)
+            }
+        }
+
+        throw IllegalStateException(
+            "Local failed ($failureReason) and all cloud fallbacks failed: ${failureSummaries.joinToString(" | ")}",
+            lastFailure
+        )
     }
 
     private fun selectLocalModel(task: Task): ModelId {

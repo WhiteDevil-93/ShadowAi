@@ -72,23 +72,8 @@ class NovitaAdapter(
     }
 
     override suspend fun isAvailable(): Boolean = withContext(Dispatchers.IO) {
-        if (!isInitialized) {
-            return@withContext false
-        }
-        try {
-            val apiKey = config.resolveApiKey() ?: return@withContext false
-            val request = Request.Builder()
-                .url("${getBaseUrl()}/v3/models")
-                .header("Authorization", "Bearer $apiKey")
-                .get()
-                .build()
-
-            val response = withRetryInternal { httpClient.newCall(request).execute() }
-            response.use { it.isSuccessful }
-        } catch (e: Exception) {
-            Log.w(TAG, "Availability check failed", e)
-            false
-        }
+        // H-10 FIX: Lightweight check to avoid network overhead on every request.
+        return@withContext isInitialized
     }
 
     override suspend fun canExecute(transform: Transform): Boolean {
@@ -373,11 +358,16 @@ class NovitaAdapter(
         }
     }
 
+    /**
+     * M-2 FIX: Preserve original exception context in error mapping.
+     * The original exception is now passed as the cause for better debugging.
+     */
     private fun mapToDomainError(e: Exception): NovitaException {
         return when (e) {
             is IOException -> NovitaException.NetworkError(e)
             is NovitaException -> e
-            else -> NovitaException.UnknownError(-1, e.message)
+            // M-2 FIX: Pass original exception as cause instead of just message
+            else -> NovitaException.UnknownError(-1, e.message, cause = e)
         }
     }
 }

@@ -1,18 +1,21 @@
+# Minimal CMakeLists for inference process
+# This builds the llama_jni library using the same source configuration as the app module
+
 cmake_minimum_required(VERSION 3.22.1)
 
-project("llama_jni")
+project("llama_jni_isolated")
 
-# Set C++ standard
+# Use the same C++ standard as the app module
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Define paths to llama.cpp sources in the app module
+# Define paths to llama.cpp sources in the app module (shared with app build)
 set(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../)
 set(LLAMA_DIR ${ROOT_DIR}/app/src/main/cpp/llama)
 set(GGML_DIR ${ROOT_DIR}/app/src/main/cpp/llama/ggml)
 set(MODELS_DIR ${ROOT_DIR}/app/src/main/cpp/llama/src/models)
 
-# Include essential llama.cpp source files
+# Include essential llama.cpp source files (same as app module)
 set(LLAMA_SOURCES
     ${LLAMA_DIR}/src/llama.cpp
     ${LLAMA_DIR}/src/llama-impl.cpp
@@ -42,7 +45,7 @@ set(LLAMA_SOURCES
     ${LLAMA_DIR}/src/unicode.cpp
 )
 
-# Include essential ggml source files
+# Include essential ggml source files (same as app module)
 set(GGML_SOURCES
     ${GGML_DIR}/src/ggml.c
     ${GGML_DIR}/src/ggml.cpp
@@ -55,7 +58,7 @@ set(GGML_SOURCES
     ${GGML_DIR}/src/gguf.cpp
 )
 
-# Include essential ggml-cpu source files for ARM
+# Include essential ggml-cpu source files for ARM (same as app module)
 set(GGML_CPU_SOURCES
     ${GGML_DIR}/src/ggml-cpu/ggml-cpu.c
     ${GGML_DIR}/src/ggml-cpu/ggml-cpu.cpp
@@ -73,15 +76,15 @@ set(GGML_CPU_SOURCES
 
 file(GLOB MODEL_SOURCES "${MODELS_DIR}/*.cpp")
 
-# Create static library for llama.cpp core
-add_library(llama_core STATIC 
-    ${LLAMA_SOURCES} 
-    ${GGML_SOURCES} 
-    ${GGML_CPU_SOURCES} 
+# Create static library for llama.cpp core (same as app module)
+add_library(llama_isolated STATIC
+    ${LLAMA_SOURCES}
+    ${GGML_SOURCES}
+    ${GGML_CPU_SOURCES}
     ${MODEL_SOURCES}
 )
 
-target_include_directories(llama_core PRIVATE
+target_include_directories(llama_isolated PRIVATE
     ${LLAMA_DIR}/include
     ${GGML_DIR}/include
     ${GGML_DIR}/src
@@ -90,47 +93,46 @@ target_include_directories(llama_core PRIVATE
     ${MODELS_DIR}
 )
 
-# Define version macros
-target_compile_definitions(llama_core PRIVATE
+# Define version macros (same as app module)
+target_compile_definitions(llama_isolated PRIVATE
     GGML_VERSION="1.0.0"
     GGML_COMMIT="unknown"
 )
 
-# Optimization and security flags
-target_compile_options(llama_core PRIVATE
-    -O3
-    -ffast-math
+# Use same compiler options as app module (no aggressive optimizations)
+target_compile_options(llama_isolated PRIVATE
+    -Wno-unused-parameter
+    -Wno-unused-variable
+    -Wno-missing-field-initializers
+    -Wno-deprecated-declarations
     -fPIC
     -fstack-protector-strong
     -D_FORTIFY_SOURCE=2
-    -Wno-unused-parameter
-    -Wno-unused-variable
+    -fno-openmp
     -Wno-unknown-pragmas
 )
 
-# Add our JNI library
-add_library(llama_jni SHARED llama_jni.cpp)
+# Add JNI library for isolated process
+add_library(llama_jni_iso SHARED llama_jni.cpp)
 
-target_include_directories(llama_jni PRIVATE
+target_include_directories(llama_jni_iso PRIVATE
     ${LLAMA_DIR}/include
     ${GGML_DIR}/include
-    ${GGML_DIR}/src
 )
 
-# Link JNI library with llama_core and Android logs
-target_link_libraries(llama_jni
-    llama_core
+# Link with isolated llama core and Android logs
+target_link_libraries(llama_jni_iso PRIVATE
+    llama_isolated
     log
     android
+    ${ANDROID_STL_SHARED_LIBRARY}
 )
 
-# ARM64 specific optimizations
-if(ANDROID_ABI STREQUAL "arm64-v8a")
-    target_compile_options(llama_jni PRIVATE
-        -march=armv8-a+fp16+dotprod
-        -O3
-        -DGGML_USE_NEON
-    )
-endif()
+# Use same properties as app module
+set_target_properties(llama_jni_iso PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    LINK_FLAGS "-Wl,-z,max-page-size=16384 -fno-openmp"
+)
 
-message(STATUS "llama_jni library configured with llama.cpp sources from app module")
+message(STATUS "Isolated llama_jni_iso library configured with shared sources from app module")

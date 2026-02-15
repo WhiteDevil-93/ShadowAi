@@ -57,27 +57,31 @@ class ProviderCrudRepository @Inject constructor(
     }
 
     private fun mergeProviders(stored: List<Provider>, defaults: List<Provider>): List<Provider> {
-        return stored.map { storedProvider ->
-            val defaultProvider = defaults.find { it.id == storedProvider.id }
-            if (defaultProvider == null) {
-                storedProvider
-            } else {
-                defaultProvider.copy(
-                    name = storedProvider.name.takeIf { it.isNotBlank() } ?: defaultProvider.name,
-                    enabled = storedProvider.enabled,
-                    baseUrl = storedProvider.baseUrl.takeIf { it.isNotBlank() } ?: defaultProvider.baseUrl,
-                    auth = if (storedProvider.auth.hasCredential || storedProvider.auth.credentialAlias != null) {
-                        storedProvider.auth
-                    } else {
-                        defaultProvider.auth
-                    },
-                    capabilities = (defaultProvider.capabilities + storedProvider.capabilities).distinct(),
-                    models = if (storedProvider.models.isNotEmpty()) storedProvider.models else defaultProvider.models,
-                    selectedModels = storedProvider.selectedModels ?: defaultProvider.selectedModels,
-                    customModels = storedProvider.customModels ?: defaultProvider.customModels,
-                )
-            }
+        val storedById = stored.associateBy { it.id }
+        val mergedDefaults = defaults.map { defaultProvider ->
+            val storedProvider = storedById[defaultProvider.id] ?: return@map defaultProvider
+            defaultProvider.copy(
+                name = storedProvider.name.takeIf { it.isNotBlank() } ?: defaultProvider.name,
+                enabled = storedProvider.enabled,
+                baseUrl = storedProvider.baseUrl.takeIf { it.isNotBlank() } ?: defaultProvider.baseUrl,
+                auth = if (storedProvider.auth.hasCredential || storedProvider.auth.credentialAlias != null) {
+                    storedProvider.auth
+                } else {
+                    defaultProvider.auth
+                },
+                capabilities = (defaultProvider.capabilities + storedProvider.capabilities).distinct(),
+                models = if (storedProvider.models.isNotEmpty()) storedProvider.models else defaultProvider.models,
+                selectedModels = storedProvider.selectedModels ?: defaultProvider.selectedModels,
+                customModels = storedProvider.customModels ?: defaultProvider.customModels,
+            )
         }
+
+        // Preserve legacy/unknown providers that are not part of the default catalog.
+        val legacyProviders = stored.filter { storedProvider ->
+            defaults.none { defaultProvider -> defaultProvider.id == storedProvider.id }
+        }
+
+        return mergedDefaults + legacyProviders
     }
 
     // --- Suspend API ---

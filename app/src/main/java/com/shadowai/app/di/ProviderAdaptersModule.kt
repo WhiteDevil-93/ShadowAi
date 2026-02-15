@@ -1,28 +1,21 @@
 package com.shadowai.app.di
 
-import android.content.Context
-import com.shadowai.provideradapters.ProviderSecretRepository
-import com.shadowai.core.security.TeeKeyManager
 import dagger.Module
-import dagger.Provides
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
+/**
+ * Hilt DI module for provider adapters.
+ *
+ * H-23 CLEANUP: Removed all manual @Provides for classes with @Inject constructors.
+ * The following classes are resolved automatically by Hilt:
+ * - ProviderSecretRepository (@Singleton @Inject constructor)
+ * - ProviderCrudRepository (@Singleton @Inject constructor)
+ * - ProviderModelRepository (@Singleton @Inject constructor)
+ * - All ProviderAdapter implementations (injected via factory)
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 object ProviderAdaptersModule {
-
-    @Provides
-    @Singleton
-    fun provideProviderSecretRepository(
-        @ApplicationContext context: Context,
-        teeKeyManager: TeeKeyManager
-    ): ProviderSecretRepository {
-        return ProviderSecretRepository(context, teeKeyManager)
-    }
-
-    // App-side ProviderRepository facade remains for legacy call sites during the migration
-    // to core-contracts ProviderRepository.
+    // No manual provides needed - Hilt auto-resolves @Inject classes
 }

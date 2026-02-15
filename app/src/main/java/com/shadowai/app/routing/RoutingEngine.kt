@@ -2,13 +2,15 @@ package com.shadowai.app.routing
 
 import com.shadowai.app.tasks.Task
 import com.shadowai.app.providers.ActiveProviderManager
-import com.shadowai.app.providers.ApiStyle
+import com.shadowai.core.providers.ApiStyle
 import com.shadowai.app.providers.Capability
 import com.shadowai.app.admin.implementation.AdminRepository
 import com.shadowai.app.device.implementation.AndroidResourceMonitor
-import com.shadowai.app.providers.ProviderRepository
+// REPOSITORY ADAPTER CLEANUP: Using direct split repository instead of ProviderRepository facade
+import com.shadowai.provideradapters.ProviderCrudRepository
 import com.shadowai.core.ProviderId
 import com.shadowai.app.tasks.TaskType
+import com.shadowai.core.Capability as CoreCapability
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,7 +23,8 @@ class PriorityRoutingHub @Inject constructor(
     private val activeProviderManager: ActiveProviderManager,
     private val adminRepo: AdminRepository,
     private val resourceMonitor: AndroidResourceMonitor,
-    private val providerRepository: ProviderRepository
+    // REPOSITORY ADAPTER CLEANUP: Direct split repository access - facade removed
+    private val crudRepository: ProviderCrudRepository
 ) : RoutingEngine {
     override suspend fun determineRouting(task: Task, policy: RoutingPolicy): RoutingDecision {
         // Governance: Respect FORCE policies first
@@ -41,9 +44,19 @@ class PriorityRoutingHub @Inject constructor(
 
         // AUTO Policy Logic
         val configs = activeProviderManager.getActiveConfigs(null)
-        val localConfigsExist = configs.any { isLocalStyle(it.apiStyle) && supportsTask(it.providerId, task.type) }
+
+        // REPOSITORY ADAPTER CLEANUP: Pre-fetch provider capabilities for checking
+        val providerCapabilities = configs.map { it.providerId }.associateWith { providerId ->
+            crudRepository.getProvider(providerId)?.capabilities?.toSet() ?: emptySet()
+        }
+
+        val localConfigsExist = configs.any { config ->
+            isLocalStyle(config.apiStyle) && supportsTask(providerCapabilities[config.providerId], task.type)
+        }
         val localAvailable = localConfigsExist && canExecuteLocal
-        val cloudAvailable = configs.any { !isLocalStyle(it.apiStyle) && supportsTask(it.providerId, task.type) }
+        val cloudAvailable = configs.any { config ->
+            !isLocalStyle(config.apiStyle) && supportsTask(providerCapabilities[config.providerId], task.type)
+        }
 
         // Phase 5.1: Priority Weights
         var selectedSource = when {
@@ -58,12 +71,12 @@ class PriorityRoutingHub @Inject constructor(
             // Priority 3: Fallback based on availability (Prefer local if untrusted)
             localAvailable -> ExecutionSource.LOCAL
             cloudAvailable && isTrusted -> ExecutionSource.CLOUD
-            // Priority 4: If local is resource-restricted but no cloud available, 
+            // Priority 4: If local is resource-restricted but no cloud available,
             // still try local with reduced performance (LocalLiquidEngine handles this)
             localConfigsExist && !canExecuteLocal && !cloudAvailable -> ExecutionSource.LOCAL
             else -> ExecutionSource.LOCAL
         }
-        
+
         // If untrusted and forced to cloud, we still allow but mark it
         if (!isTrusted && selectedSource == ExecutionSource.CLOUD) {
             if (localAvailable) selectedSource = ExecutionSource.LOCAL
@@ -89,15 +102,24 @@ class PriorityRoutingHub @Inject constructor(
         )
     }
 
-    private fun supportsTask(providerId: ProviderId, taskType: TaskType): Boolean {
-        val required = requiredCapability(taskType)
-        return providerRepository.getProvider(providerId)?.capabilities?.contains(required) == true
+    private fun supportsTask(capabilities: Set<CoreCapability>?, taskType: TaskType): Boolean {
+        if (capabilities == null) return false
+        val required = requiredCoreCapability(taskType)
+        return capabilities.any { coreCap ->
+            when (required) {
+                CoreCapability.IMAGE_GEN -> coreCap == CoreCapability.IMAGE_GEN ||
+                                           coreCap == CoreCapability.IMAGE_GEN_FAST ||
+                                           coreCap == CoreCapability.IMAGE_GEN_HIGH_RES
+                CoreCapability.TEXT -> true // TEXT is base capability
+                else -> coreCap == required
+            }
+        }
     }
 
-    private fun requiredCapability(taskType: TaskType): Capability {
+    private fun requiredCoreCapability(taskType: TaskType): CoreCapability {
         return when (taskType) {
-            TaskType.IMAGE_GEN -> Capability.IMAGE_GEN
-            else -> Capability.TEXT
+            TaskType.IMAGE_GEN -> CoreCapability.IMAGE_GEN
+            else -> CoreCapability.TEXT
         }
     }
 
@@ -105,4 +127,3 @@ class PriorityRoutingHub @Inject constructor(
         return style == ApiStyle.LOCAL_IMAGE || style == ApiStyle.LOCAL_TEXT || style == ApiStyle.LIQUID
     }
 }
-

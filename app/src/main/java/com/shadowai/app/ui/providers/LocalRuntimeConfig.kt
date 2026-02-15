@@ -18,7 +18,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
+import androidx.fragment.app.FragmentActivity
 import com.shadowai.core.ProviderId
+import com.shadowai.app.ui.screens.ModelDetailRow
+import com.shadowai.app.ai.QuantizationHelper
+import com.shadowai.app.security.BiometricAuthManager
+import com.shadowai.app.security.PreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -172,14 +177,19 @@ fun LocalRuntimeConfig(
     onSaveConfig: (String) -> Unit,
     onTreeUriSet: (android.net.Uri?) -> Unit = {},  // New callback for SAF tree URI
     onModelsImported: () -> Unit = {},
+    onNavigateToModelPicker: (() -> Unit)? = null,  // Navigate to model picker screen
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val appModelDir = remember { resolveAppModelDir(context) }
+    val preferencesManager = remember(context) { PreferencesManager(context.applicationContext) }
+    val biometricAuthManager = remember(context) { BiometricAuthManager(context.applicationContext) }
+    val requireBiometricForDownloads by preferencesManager.requireBiometricForDownloads.collectAsState(initial = false)
     var host by remember { mutableStateOf("localhost") }
     var port by remember { mutableStateOf("11434") }
     var modelPath by remember { mutableStateOf("") }
     var isImporting by remember { mutableStateOf(false) }
+    var isAuthenticating by remember { mutableStateOf(false) }
     var importMessage by remember { mutableStateOf<String?>(null) }
     var importSuccess by remember { mutableStateOf(false) }
     var linkedTreeUri by remember { mutableStateOf<android.net.Uri?>(null) }
@@ -447,22 +457,78 @@ fun LocalRuntimeConfig(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                if (requireBiometricForDownloads) {
+                    Text(
+                        text = "Biometric verification is required before importing models.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 Button(
                     onClick = {
-                        when (importMode) {
-                            ImportMode.IMPORT_FILES -> {
-                                // Use MIME type filter for .gguf files
-                                fileLauncher.launch(arrayOf("*/*"))
+                        val launchImportPicker = {
+                            when (importMode) {
+                                ImportMode.IMPORT_FILES -> {
+                                    // Use MIME type filter for .gguf files
+                                    fileLauncher.launch(arrayOf("*/*"))
+                                }
+                                ImportMode.IMPORT_FOLDER, ImportMode.LINK_SAF -> {
+                                    folderLauncher.launch(null)
+                                }
                             }
-                            ImportMode.IMPORT_FOLDER, ImportMode.LINK_SAF -> {
-                                folderLauncher.launch(null)
+                        }
+
+                        if (!requireBiometricForDownloads) {
+                            launchImportPicker()
+                            return@Button
+                        }
+
+                        if (context !is FragmentActivity) {
+                            importMessage = "Biometric authentication unavailable in current context."
+                            return@Button
+                        }
+
+                        coroutineScope.launch {
+                            isAuthenticating = true
+                            importMessage = null
+                            val authResult = try {
+                                biometricAuthManager.authenticate(
+                                    activity = context,
+                                    title = "Authenticate Model Import",
+                                    subtitle = "Importing models requires verification",
+                                    description = "Confirm your identity before modifying local model storage",
+                                    allowDeviceCredential = true
+                                )
+                            } catch (e: Exception) {
+                                isAuthenticating = false
+                                importMessage = "Authentication error: ${e.message ?: "Unknown error"}"
+                                return@launch
+                            }
+                            isAuthenticating = false
+
+                            when (authResult) {
+                                BiometricAuthManager.AuthResult.SUCCESS -> launchImportPicker()
+                                BiometricAuthManager.AuthResult.CANCELLED -> {
+                                    importMessage = "Authentication cancelled"
+                                }
+                                BiometricAuthManager.AuthResult.NOT_AVAILABLE,
+                                BiometricAuthManager.AuthResult.NOT_SECURE -> {
+                                    importMessage = "Enable device lock or biometrics to import models."
+                                }
+                                BiometricAuthManager.AuthResult.NOT_ENROLLED -> {
+                                    importMessage = "No credentials enrolled. Set up device security first."
+                                }
+                                BiometricAuthManager.AuthResult.FAILED -> {
+                                    importMessage = "Authentication failed. Please try again."
+                                }
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isImporting
+                    enabled = !isImporting && !isAuthenticating
                 ) {
-                    if (isImporting) {
+                    if (isImporting || isAuthenticating) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(18.dp),
                             strokeWidth = 2.dp
@@ -471,9 +537,9 @@ fun LocalRuntimeConfig(
                     }
                     Text(
                         text = when (importMode) {
-                            ImportMode.IMPORT_FILES -> if (isImporting) "Importing..." else "Select .gguf File(s)"
-                            ImportMode.IMPORT_FOLDER -> if (isImporting) "Importing..." else "Select Folder to Import"
-                            ImportMode.LINK_SAF -> if (isImporting) "Linking..." else "Link Folder (SAF)"
+                            ImportMode.IMPORT_FILES -> if (isAuthenticating) "Authenticating..." else if (isImporting) "Importing..." else "Select .gguf File(s)"
+                            ImportMode.IMPORT_FOLDER -> if (isAuthenticating) "Authenticating..." else if (isImporting) "Importing..." else "Select Folder to Import"
+                            ImportMode.LINK_SAF -> if (isAuthenticating) "Authenticating..." else if (isImporting) "Linking..." else "Link Folder (SAF)"
                         }
                     )
                 }
@@ -662,7 +728,48 @@ fun LocalRuntimeConfig(
 
         // Installed models (if runtime is running)
         if (runtimeStatus == RuntimeStatus.Running && installedModels.isNotEmpty()) {
-             InstalledModelsCard(models = installedModels)
+             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                 Row(
+                     modifier = Modifier.fillMaxWidth(),
+                     horizontalArrangement = Arrangement.SpaceBetween,
+                     verticalAlignment = Alignment.CenterVertically
+                 ) {
+                     Text(
+                         text = "Installed Models (${installedModels.size})",
+                         style = MaterialTheme.typography.titleSmall,
+                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                     )
+
+                     if (onNavigateToModelPicker != null && providerId == ProviderId.LIQUID) {
+                         TextButton(onClick = onNavigateToModelPicker) {
+                             Text("View All")
+                         }
+                     }
+                 }
+
+                 installedModels.take(3).forEach { modelName ->
+                     // Estimate file size for quantization info
+                     val estimatedSize = remember(modelName) {
+                         // This is a placeholder - in real usage, would fetch actual file size
+                         1024L * 1024L * 1024L  // Default to 1GB
+                     }
+
+                     ModelDetailRow(
+                         modelName = modelName,
+                         fileSizeBytes = estimatedSize,
+                         modifier = Modifier.fillMaxWidth()
+                     )
+                 }
+
+                 if (installedModels.size > 3) {
+                     TextButton(
+                         onClick = { onNavigateToModelPicker?.invoke() },
+                         modifier = Modifier.fillMaxWidth()
+                     ) {
+                         Text("View all ${installedModels.size} models")
+                     }
+                 }
+             }
         }
     }
 }

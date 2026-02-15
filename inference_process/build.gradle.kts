@@ -66,7 +66,9 @@ android {
 
     externalNativeBuild {
         cmake {
-            path = file("../app/src/main/cpp/CMakeLists.txt")
+            // Build isolated-process JNI entrypoints from this module's CMake,
+            // not the app module, to keep symbol names aligned with NativeBridge.
+            path = file("src/main/cpp/CMakeLists.txt")
             version = "3.22.1"
         }
     }

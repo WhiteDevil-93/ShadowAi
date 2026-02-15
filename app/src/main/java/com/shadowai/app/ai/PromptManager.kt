@@ -18,7 +18,8 @@ import javax.inject.Singleton
 @Singleton
 class PromptManager @Inject constructor(
     private val memoryManager: MemoryManager,
-    private val piiMaskingProcessor: PiiMaskingProcessor // Inject PII Masking Processor
+    private val piiMaskingProcessor: PiiMaskingProcessor, // Inject PII Masking Processor
+    private val tokenCounter: TokenCounter // M-12: Use centralized TokenCounter
 ) {
     companion object {
         private const val TAG = "PromptManager"
@@ -152,17 +153,9 @@ class PromptManager @Inject constructor(
     }
 
     /**
-     * Approximate token counter (TikToken-style heuristic).
-     * Uses ~4 chars/token for quick budgeting.
-     */
-    private fun countTokens(text: String): Int {
-        if (text.isBlank()) return 0
-        return (text.length / 4).coerceAtLeast(1)
-    }
-
-    /**
      * Applies a sliding window to memory context once usage reaches threshold.
      * Keeps the last N exchanges (approximated as 2 lines per exchange).
+     * M-12: Uses centralized TokenCounter instead of duplicate local implementation.
      */
     private fun applySlidingWindow(
         context: String,
@@ -172,7 +165,7 @@ class PromptManager @Inject constructor(
     ): String {
         if (context.isBlank()) return context
 
-        val tokenCount = countTokens(context)
+        val tokenCount = tokenCounter.countTokens(context)
         val thresholdTokens = (maxContextTokens * contextThreshold).toInt().coerceAtLeast(1)
         if (tokenCount < thresholdTokens) return context
 

@@ -160,11 +160,11 @@ class ProviderModelDiscovery @Inject constructor(
             localModelEngine.scanForModels()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to scan Liquid models", e)
-            return ProviderModelCatalog.getModels(ProviderId.LIQUID)
+            return emptyList()
         }
         if (localModels.isEmpty()) {
-            Log.d(TAG, "No local GGUF models found, returning catalog defaults for LIQUID")
-            return ProviderModelCatalog.getModels(ProviderId.LIQUID)
+            Log.d(TAG, "No local GGUF models found for LIQUID provider")
+            return emptyList()
         }
         return localModels.map { toLiquidModelInfo(it) }
     }

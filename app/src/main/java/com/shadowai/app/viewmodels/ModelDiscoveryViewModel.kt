@@ -7,10 +7,15 @@ import com.shadowai.core.ModelDescriptor
 import com.shadowai.core.ProviderId
 import com.shadowai.modelcatalog.ModelDiscovery
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.concurrent.Executors
 import javax.inject.Inject
 
 /**
@@ -25,6 +30,8 @@ data class DiscoveryUiState(
 /**
  * ViewModel that bridges ModelDiscovery (from model-catalog module) to the UI.
  * Provides StateFlow-based reactive state for Compose integration.
+ *
+ * M-15: Uses dedicated thread pool for async model discovery to avoid blocking UI.
  */
 @HiltViewModel
 class ModelDiscoveryViewModel @Inject constructor(
@@ -38,6 +45,16 @@ class ModelDiscoveryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DiscoveryUiState())
     val uiState: StateFlow<DiscoveryUiState> = _uiState.asStateFlow()
 
+    // M-15: Dedicated thread pool for model discovery I/O operations
+    // Using fixed thread pool to limit concurrency and resource consumption
+    private val discoveryDispatcher: CoroutineDispatcher = Executors.newFixedThreadPool(4).asCoroutineDispatcher()
+
+    override fun onCleared() {
+        // M-15: Clean up thread pool when ViewModel is destroyed
+        (discoveryDispatcher as kotlinx.coroutines.ExecutorCoroutineDispatcher).close()
+        super.onCleared()
+    }
+
     init {
         // Automatically scan on initialization to populate the catalog
         scanForModels()
@@ -46,6 +63,7 @@ class ModelDiscoveryViewModel @Inject constructor(
     /**
      * Scans all configured sources for models.
      * Updates the UI state with discovered models.
+     * M-15: Uses dedicated dispatcher for I/O operations.
      */
     fun scanForModels() {
         viewModelScope.launch {
@@ -56,7 +74,10 @@ class ModelDiscoveryViewModel @Inject constructor(
 
             try {
                 Log.d(TAG, "Starting model discovery scan...")
-                val models = modelDiscovery.discoverFromAllSources()
+                // M-15: Run discovery on dedicated thread pool
+                val models = withContext(discoveryDispatcher) {
+                    modelDiscovery.discoverFromAllSources()
+                }
                 Log.d(TAG, "Discovered ${models.size} models")
 
                 _uiState.value = _uiState.value.copy(
@@ -77,6 +98,7 @@ class ModelDiscoveryViewModel @Inject constructor(
     /**
      * Forces a rescan of models.
      * Useful when models have been imported via SAF or directories have changed.
+     * M-15: Uses dedicated dispatcher for I/O operations.
      */
     fun rescan() {
         viewModelScope.launch {
@@ -87,7 +109,10 @@ class ModelDiscoveryViewModel @Inject constructor(
 
             try {
                 Log.d(TAG, "Starting forced model rescan...")
-                val models = modelDiscovery.rescan()
+                // M-15: Run rescan on dedicated thread pool
+                val models = withContext(discoveryDispatcher) {
+                    modelDiscovery.rescan()
+                }
                 Log.d(TAG, "Rescan discovered ${models.size} models")
 
                 _uiState.value = _uiState.value.copy(
@@ -142,6 +167,7 @@ class ModelDiscoveryViewModel @Inject constructor(
     /**
      * Discovers models from specific local directories.
      * Useful when user adds custom model directories.
+     * M-15: Uses dedicated dispatcher for I/O operations.
      *
      * @param directories List of directory paths to scan
      */
@@ -154,10 +180,13 @@ class ModelDiscoveryViewModel @Inject constructor(
 
             try {
                 Log.d(TAG, "Scanning custom directories: $directories")
-                val models = modelDiscovery.discoverFromAllSources(
-                    localModelDirs = directories,
-                    jsonConfigFiles = emptyList()
-                )
+                // M-15: Run directory scan on dedicated thread pool
+                val models = withContext(discoveryDispatcher) {
+                    modelDiscovery.discoverFromAllSources(
+                        localModelDirs = directories,
+                        jsonConfigFiles = emptyList()
+                    )
+                }
                 Log.d(TAG, "Discovered ${models.size} models from custom directories")
 
                 // Merge with existing models, deduplicating by ID
