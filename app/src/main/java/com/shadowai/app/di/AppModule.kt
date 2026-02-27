@@ -38,10 +38,6 @@ object AppModule {
     @Singleton
     fun provideGson(): Gson = Gson()
 
-    @Provides
-    @Singleton
-    fun provideLlamaNative(): LlamaNative = LlamaNative()
-
     /**
      * CIRCULAR DEPENDENCY FIX: ILlamaEngine interface binding
      */
@@ -167,11 +163,4 @@ object AppModule {
     @Provides
     @Singleton
     fun providePipelineExecutor(): PipelineExecutor = PipelineExecutor()
-
-    @Provides
-    @Singleton
-    fun provideConversationSummarizer(
-        llamaNative: LlamaNative,
-        tokenCounter: TokenCounter
-    ): ConversationSummarizer = ConversationSummarizer(llamaNative, tokenCounter)
 }

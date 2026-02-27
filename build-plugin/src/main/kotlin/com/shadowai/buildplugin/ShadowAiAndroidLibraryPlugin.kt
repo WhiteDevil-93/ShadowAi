@@ -36,8 +36,8 @@ class ShadowAiAndroidLibraryPlugin : Plugin<Project> {
             }
 
             compileOptions {
-                sourceCompatibility = JavaVersion.VERSION_17
-                targetCompatibility = JavaVersion.VERSION_17
+                sourceCompatibility = JavaVersion.VERSION_21
+                targetCompatibility = JavaVersion.VERSION_21
             }
 
             testOptions {
@@ -53,7 +53,7 @@ class ShadowAiAndroidLibraryPlugin : Plugin<Project> {
 
         // Configure Kotlin JVM toolchain
         extensions.configure<KotlinAndroidProjectExtension> {
-            jvmToolchain(17)
+            jvmToolchain(21)
         }
 
         // Add standard dependencies
