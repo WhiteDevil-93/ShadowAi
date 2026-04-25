@@ -42,7 +42,6 @@ sealed class FallbackResult {
 class ProviderSelector @Inject constructor(
     private val activeProviderManager: ActiveProviderManager,
     private val adminRepository: AdminRepository,
-    // REPOSITORY ADAPTER CLEANUP: Replaced ProviderRepository facade with split repositories
     private val crudRepository: ProviderCrudRepository
 ) {
     private val indexMutex = Mutex()

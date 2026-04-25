@@ -38,6 +38,9 @@ object AppModule {
     @Singleton
     fun provideGson(): Gson = Gson()
 
+    /**
+     * Ensures all consumers share the same native-backed engine instance.
+     */
     @Provides
     @Singleton
     fun provideLlamaNative(): LlamaNative = LlamaNative()
@@ -167,11 +170,4 @@ object AppModule {
     @Provides
     @Singleton
     fun providePipelineExecutor(): PipelineExecutor = PipelineExecutor()
-
-    @Provides
-    @Singleton
-    fun provideConversationSummarizer(
-        llamaNative: LlamaNative,
-        tokenCounter: TokenCounter
-    ): ConversationSummarizer = ConversationSummarizer(llamaNative, tokenCounter)
 }

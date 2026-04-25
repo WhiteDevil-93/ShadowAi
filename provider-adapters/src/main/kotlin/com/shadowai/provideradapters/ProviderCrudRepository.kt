@@ -27,6 +27,7 @@ class ProviderCrudRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gson: Gson,
     private val applicationScope: CoroutineScope,
+    private val providerAdapterFactory: ProviderAdapterFactory
 ) {
     companion object {
         private const val PREFS_NAME = "providers"
@@ -107,6 +108,8 @@ class ProviderCrudRepository @Inject constructor(
             providers.add(provider)
         }
         persistProviders(providers)
+        // Invalidate cache for this provider to ensure updated config is picked up
+        providerAdapterFactory.invalidateProviderModel(provider.id)
     }
 
     suspend fun listProvidersSync(): List<Provider> = getAllProviders()
@@ -130,6 +133,12 @@ class ProviderCrudRepository @Inject constructor(
             if (index >= 0) {
                 providers[index] = provider.copy(enabled = enabled)
                 persistProviders(providers)
+            }
+            // Remove adapter from cache if disabled, or just invalidate if enabled to force re-init
+            if (!enabled) {
+                providerAdapterFactory.removeAdapter(providerId)
+            } else {
+                providerAdapterFactory.invalidateProviderModel(providerId)
             }
         }
     }

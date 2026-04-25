@@ -15,11 +15,8 @@ import com.shadowai.app.ai.MemoryConstants
 import com.shadowai.app.providers.ProviderSelector
 import com.shadowai.core.providers.ActiveProviderConfig
 import com.shadowai.core.Capability
-// REPOSITORY ADAPTER CLEANUP: Removed ProviderRepository facade dependency
-// Now using split repositories directly via ProviderSelector
 import com.shadowai.core.security.PiiMaskingProcessor
 import com.shadowai.app.providers.LocalRuntimeConfig
-// LEGACY REMOVAL: Direct TaskExecutionService dependency removed - now uses HybridAiExecutor only
 import com.shadowai.app.routing.RoutingEngine
 import com.shadowai.diagnostics.ErrorCollector
 import com.shadowai.diagnostics.ErrorContext
@@ -63,8 +60,6 @@ class DefaultTaskExecutor @Inject constructor(
     private val hybridExecutor: HybridAiExecutor,
     private val adminRepo: AdminRepository,
     private val providerSelector: ProviderSelector,
-    // REPOSITORY ADAPTER CLEANUP: Removed ProviderRepository facade - now using ProviderSelector as coordinator
-    // LEGACY REMOVAL: Removed TaskExecutionService and LocalBrainManager dependencies - adapter architecture complete
     private val errorCollector: ErrorCollector,
     private val errorContextStore: ErrorContextStore,
     internal val piiMaskingProcessor: PiiMaskingProcessor
