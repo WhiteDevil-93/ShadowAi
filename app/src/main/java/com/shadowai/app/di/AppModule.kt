@@ -39,6 +39,13 @@ object AppModule {
     fun provideGson(): Gson = Gson()
 
     /**
+     * Ensures all consumers share the same native-backed engine instance.
+     */
+    @Provides
+    @Singleton
+    fun provideLlamaNative(): LlamaNative = LlamaNative()
+
+    /**
      * CIRCULAR DEPENDENCY FIX: ILlamaEngine interface binding
      */
     @Provides
