@@ -16,7 +16,7 @@ spotless {
     kotlin {
         target("*/src/**/*.kt", "src/**/*.kt", "*.kts")
         targetExclude("**/build/**", "**/.gradle/**", "**/generated/**")
-        ktlint(libs.versions.ktlint.get()).editorConfigOverride(mapOf(
+        ktlint(libs.versions.ktlintTool.get()).editorConfigOverride(mapOf(
             "indent_size" to "4",
             "indent_style" to "space",
             "max_line_length" to "off",
@@ -27,7 +27,7 @@ spotless {
     kotlinGradle {
         target("*.gradle.kts")
         targetExclude("**/build/**")
-        ktlint(libs.versions.ktlint.get())
+        ktlint(libs.versions.ktlintTool.get())
     }
     json {
         target("*.json", "*/src/**/*.json")
